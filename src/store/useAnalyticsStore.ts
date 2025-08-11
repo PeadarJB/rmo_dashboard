@@ -1,74 +1,178 @@
+// src/store/useAnalyticsStore.ts
 import { create } from 'zustand';
 import { produce } from 'immer';
-import type { RoadSegment, SummaryData, DataLoadProgress } from '@/types/data';
-import {
-  DEFAULT_PARAMS,
-  Thresholds,
-  Costs,
-} from '@/types/calculations';
-import type { AnalyticsState } from '@/types';
+import type { 
+  AnalyticsState, 
+  InitialStateValues,
+  SetCalculationResultsPayload 
+} from '@/types/store';
+import { DEFAULT_THRESHOLDS, DEFAULT_COSTS } from '@/types/calculations';
 
-// Define the initial state with a flat structure
-const initialState = {
-  summaryData: null,
-  fullDataset: null,
-  loadProgress: { stage: 'idle', summaryLoaded: false, fullLoaded: false, progress: 0 },
-  loadError: null,
-  isLoading: false,
-  results: {
-    segments: null,
-    summary: null,
-    timestamp: null,
+// Define the initial nested state structure
+const initialState: InitialStateValues = {
+  data: {
+    summaryData: null,
+    fullDataset: null,
   },
-  thresholds: DEFAULT_PARAMS.thresholds,
-  costs: DEFAULT_PARAMS.costs,
-  selectedYear: DEFAULT_PARAMS.selectedYear,
-  selectedAuthorities: [],
+  ui: {
+    loadProgress: { 
+      stage: 'idle' as const,  // Enforce literal type
+      summaryLoaded: false, 
+      fullLoaded: false, 
+      progress: 0 
+    },
+    loadError: null,
+    isLoading: false,
+  },
+  parameters: {
+    thresholds: DEFAULT_THRESHOLDS,
+    costs: DEFAULT_COSTS,
+    selectedYear: '2018' as const,
+    selectedAuthorities: [],
+  },
+  cache: {
+    results: {
+      segments: null,
+      summary: null,
+      timestamp: null,
+      calculationId: null,
+    },
+  },
+  user: {
+    isAuthenticated: false,
+    preferences: {},
+  },
 };
 
 export const useAnalyticsStore = create<AnalyticsState>((set) => ({
+  // ============= STATE =============
   ...initialState,
 
-  // Data Actions
-  setSummaryData: (data: SummaryData | null) => set({ summaryData: data }),
-  setFullDataset: (data: RoadSegment[] | null) => set({ fullDataset: data }),
-  setLoadProgress: (progress: DataLoadProgress) => set({ loadProgress: progress }),
-  setLoadError: (error: string | null) => set({ loadError: error }),
-  setIsLoading: (loading: boolean) => set({ isLoading: loading }),
-  clearData: () => set({
-    summaryData: initialState.summaryData,
-    fullDataset: initialState.fullDataset,
-    loadError: initialState.loadError,
-    loadProgress: initialState.loadProgress,
-    isLoading: initialState.isLoading,
-  }),
-
-  // Calculation Actions
-  setCalculationResults: (results: AnalyticsState['results']) => set({ results }),
-  clearCalculationResults: () => set({ results: initialState.results }),
-
-  // Parameter Actions
-  // Using Immer for safe nested updates
-  updateThresholds: (newThresholds: Partial<Thresholds>) =>
+  // ============= DATA ACTIONS =============
+  setSummaryData: (data) =>
     set(produce((state: AnalyticsState) => {
-      // Safely merge partial threshold updates
-      for (const key of Object.keys(newThresholds) as Array<keyof Thresholds>) {
-        if (state.thresholds[key] && newThresholds[key]) {
-          // Use Object.assign for a shallow merge of the inner object
-          Object.assign(state.thresholds[key], newThresholds[key]);
-        }
-      }
+      state.data.summaryData = data;
     })),
-  updateCosts: (newCosts: Partial<Costs>) =>
-    set((state: AnalyticsState) => ({ costs: { ...state.costs, ...newCosts } })),
-  setSelectedYear: (year: '2011' | '2018' | 'both') => set({ selectedYear: year }),
-  setSelectedAuthorities: (authorities: string[]) =>
-    set({ selectedAuthorities: authorities }),
+
+  setFullDataset: (data) =>
+    set(produce((state: AnalyticsState) => {
+      state.data.fullDataset = data;
+    })),
+
+  clearData: () =>
+    set(produce((state: AnalyticsState) => {
+      state.data.summaryData = null;
+      state.data.fullDataset = null;
+      state.ui.loadError = null;
+      state.ui.loadProgress = {
+        stage: 'idle' as const,
+        summaryLoaded: false,
+        fullLoaded: false,
+        progress: 0,
+      };
+      state.ui.isLoading = false;
+    })),
+
+  // ============= UI ACTIONS =============
+  setLoadProgress: (progress) =>
+    set(produce((state: AnalyticsState) => {
+      state.ui.loadProgress = progress;
+    })),
+
+  setLoadError: (error) =>
+    set(produce((state: AnalyticsState) => {
+      state.ui.loadError = error;
+    })),
+
+  setIsLoading: (loading) =>
+    set(produce((state: AnalyticsState) => {
+      state.ui.isLoading = loading;
+    })),
+
+  // ============= CALCULATION ACTIONS =============
+  setCalculationResults: (payload: SetCalculationResultsPayload) =>
+    set(produce((state: AnalyticsState) => {
+      state.cache.results = {
+        segments: payload.segments,
+        summary: payload.summary,
+        timestamp: payload.timestamp,
+        calculationId: payload.calculationId,
+      };
+    })),
+
+  clearCalculationResults: () =>
+    set(produce((state: AnalyticsState) => {
+      state.cache.results = {
+        segments: null,
+        summary: null,
+        timestamp: null,
+        calculationId: null,
+      };
+    })),
+
+  // ============= PARAMETER ACTIONS =============
+  updateThresholds: (newThresholds) =>
+    set(produce((state: AnalyticsState) => {
+      // Deep merge each threshold category
+      Object.keys(newThresholds).forEach((key) => {
+        const thresholdKey = key as keyof typeof newThresholds;
+        if (newThresholds[thresholdKey]) {
+          Object.assign(
+            state.parameters.thresholds[thresholdKey],
+            newThresholds[thresholdKey]
+          );
+        }
+      });
+    })),
+
+  updateCosts: (newCosts) =>
+    set(produce((state: AnalyticsState) => {
+      Object.assign(state.parameters.costs, newCosts);
+    })),
+
+  setSelectedYear: (year) =>
+    set(produce((state: AnalyticsState) => {
+      state.parameters.selectedYear = year;
+    })),
+
+  setSelectedAuthorities: (authorities) =>
+    set(produce((state: AnalyticsState) => {
+      state.parameters.selectedAuthorities = authorities;
+    })),
+
   resetParameters: () =>
-    set({
-      thresholds: initialState.thresholds,
-      costs: initialState.costs,
-      selectedYear: initialState.selectedYear,
-      selectedAuthorities: initialState.selectedAuthorities,
-    }),
+    set(produce((state: AnalyticsState) => {
+      state.parameters = {
+        thresholds: DEFAULT_THRESHOLDS,
+        costs: DEFAULT_COSTS,
+        selectedYear: '2018' as const,
+        selectedAuthorities: [],
+      };
+    })),
+
+  // ============= USER ACTIONS (placeholder) =============
+  setAuthenticated: (authenticated) =>
+    set(produce((state: AnalyticsState) => {
+      state.user.isAuthenticated = authenticated;
+    })),
+
+  updatePreferences: (preferences) =>
+    set(produce((state: AnalyticsState) => {
+      Object.assign(state.user.preferences, preferences);
+    })),
 }));
+
+// ============= SELECTORS (optional, for complex derived state) =============
+export const selectors = {
+  hasData: (state: AnalyticsState) => 
+    !!(state.data.summaryData || state.data.fullDataset),
+  
+  isReady: (state: AnalyticsState) => 
+    !!state.data.fullDataset && !state.ui.isLoading,
+  
+  totalSegments: (state: AnalyticsState) => 
+    state.data.fullDataset?.length ?? 0,
+  
+  totalCost2018: (state: AnalyticsState) => 
+    state.cache.results.summary?.['2018']?.total_cost ?? null,
+};
