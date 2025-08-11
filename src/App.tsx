@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import './App.css';
 import { DataLoaderTest } from './components/DataLoaderTest';
 import { CalculationTest } from './components/CalculationTest';
