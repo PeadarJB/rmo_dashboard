@@ -2,16 +2,11 @@
 import { RoadSegment, SummaryData, DataLoadProgress } from '@/types/data';
 import { DatasetSchema, SummaryDataSchema } from '@/utils/validators';
 
-// Define cache database schema
-interface CacheDB {
-  datasets: {
-    key: string;
-    value: {
-      data: RoadSegment[] | SummaryData;
-      timestamp: number;
-      version: string;
-    };
-  };
+// Define the structure of the cached data
+interface CacheEntry {
+  data: RoadSegment[] | SummaryData;
+  timestamp: number;
+  version: string;
 }
 
 const CACHE_VERSION = '1.0.0';
@@ -42,7 +37,7 @@ export class DataLoaderService {
     });
   }
 
-  private async getFromCache(key: string): Promise<any | null> {
+  private async getFromCache(key: string): Promise<CacheEntry | null> {
     const db = await this.initDB();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(['datasets'], 'readonly');
@@ -54,7 +49,7 @@ export class DataLoaderService {
     });
   }
 
-  private async saveToCache(key: string, value: any): Promise<void> {
+  private async saveToCache(key: string, value: CacheEntry): Promise<void> {
     const db = await this.initDB();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(['datasets'], 'readwrite');
