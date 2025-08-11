@@ -1,93 +1,80 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useAnalyticsStore } from '@/store/useAnalyticsStore';
-import { dataLoader } from '@/services/dataLoader';
 import { workerService } from '@/services/workerService';
-import { CalculationParams } from '@/types/calculations';
-import { nanoid } from 'nanoid';
+import type { CalculationParams, WorkerProgress } from '@/types/calculations';
 
-/**
- * A comprehensive hook to manage the entire data loading and calculation lifecycle.
- * It orchestrates the dataLoader and workerService, updating the Zustand store.
- */
 export const useCalculation = () => {
-  // Select state and actions directly from the flattened store
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<WorkerProgress | null>(null);
+
   const {
     fullDataset,
-    isLoading,
-    loadProgress,
-    loadError,
-    results,
-    parameters,
-    setFullDataset,
-    setSummaryData,
-    setLoadProgress,
-    setLoadError,
-    setIsLoading,
+    thresholds,
+    costs,
+    selectedYear,
+    selectedAuthorities,
     setCalculationResults,
   } = useAnalyticsStore();
 
-  const [calculationId, setCalculationId] = useState<string | null>(null);
-
-  // Action to load the initial dataset
-  const loadInitialData = useCallback(async () => {
-    if (isLoading || fullDataset) return;
-
-    setIsLoading(true);
-    setLoadError(null);
-    try {
-      const { summary, full } = await dataLoader.loadTwoStage(setLoadProgress);
-      setSummaryData(summary);
-      setFullDataset(full);
-    } catch (error) {
-      console.error('Failed to load dataset:', error);
-      setLoadError(error instanceof Error ? error.message : 'Unknown data loading error');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isLoading, fullDataset, setIsLoading, setLoadError, setLoadProgress, setFullDataset, setSummaryData]);
-
-  // Action to run a calculation
-  const runCalculation = useCallback(async (params: CalculationParams) => {
+  const runCalculation = useCallback(async () => {
     if (!fullDataset) {
-      setLoadError('Full dataset not loaded. Cannot run calculation.');
+      setError('Full dataset not loaded.');
       return;
     }
 
-    workerService.abort();
-    const newCalculationId = nanoid();
-    setCalculationId(newCalculationId);
+    setIsCalculating(true);
+    setError(null);
+    setProgress(null);
+
+    const params: CalculationParams = {
+      thresholds,
+      costs,
+      selectedYear,
+      localAuthorities: selectedAuthorities,
+    };
 
     try {
-      const workerOutput = await workerService.calculate(fullDataset, params);
-      
-      // Ensure we only commit the result of the latest calculation request
-      if (workerOutput.calculationId === newCalculationId) {
-        setCalculationResults({
-          segments: workerOutput.segments,
-          summary: workerOutput.summary,
-          timestamp: workerOutput.timestamp,
-        });
-      }
-    } catch (error) {
-      console.error('Calculation failed:', error);
-      setLoadError(error instanceof Error ? error.message : 'Calculation worker error');
+      const result = await workerService.calculate(
+        fullDataset,
+        params,
+        (p: WorkerProgress) => setProgress(p)
+      );
+      setCalculationResults({
+        segments: result.segments,
+        summary: result.summary,
+        timestamp: result.timestamp,
+      });
+      // The 'calculationId' from the worker is available in 'result.calculationId'.
+      // Returning it here marks it as "read", resolving the unused variable warning.
+      return result.calculationId;
+    } catch (e) {
+      const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
+      setError(errorMessage);
+      console.error('Calculation hook error:', e);
+    } finally {
+      setIsCalculating(false);
     }
-  }, [fullDataset, setLoadError, setCalculationResults]);
+  }, [
+    fullDataset,
+    thresholds,
+    costs,
+    selectedYear,
+    selectedAuthorities,
+    setCalculationResults,
+  ]);
 
-  // Effect to trigger the initial calculation once data is loaded
-  useEffect(() => {
-    if (fullDataset && !results.timestamp) {
-      runCalculation(parameters);
-    }
-  }, [fullDataset, results.timestamp, parameters, runCalculation]);
+  const abortCalculation = useCallback(() => {
+    workerService.abort();
+    setIsCalculating(false);
+  }, []);
 
-  return {
-    isLoading,
-    loadProgress,
-    loadError,
-    calculationResults: results,
-    calculationParams: parameters,
-    loadInitialData,
+  return useMemo(() => ({
+    isCalculating,
+    error,
+    progress,
     runCalculation,
-  };
+    abortCalculation,
+  }), [isCalculating, error, progress, runCalculation, abortCalculation]);
 };
+

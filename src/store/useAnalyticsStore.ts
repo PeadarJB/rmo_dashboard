@@ -1,81 +1,25 @@
-import { RoadSegment, SummaryData, DataLoadProgress } from '@/types/data';
 import { create } from 'zustand';
-import { 
-  CalculatedRoadSegment, 
-  CalculationSummary,
-  CalculationParams,
-  DEFAULT_PARAMS 
+import { produce } from 'immer';
+import type { RoadSegment, SummaryData, DataLoadProgress } from '@/types/data';
+import {
+  DEFAULT_PARAMS,
+  Thresholds,
+  Costs,
 } from '@/types/calculations';
+import type { AnalyticsState } from '@/types';
 
-interface DataState {
-  summaryData: SummaryData | null;
-  fullDataset: RoadSegment[] | null;
-  loadProgress: DataLoadProgress;
-  loadError: string | null;
-  isLoading: boolean;
-}
-
-interface CalculationState {
-  results: {
-    segments: CalculatedRoadSegment[] | null;
-    summary: CalculationSummary | null;
-    timestamp: number | null;
-  };
-}
-
-interface ParameterState {
-  thresholds: CalculationParams['thresholds'];
-  costs: CalculationParams['costs'];
-  selectedYear: '2011' | '2018' | 'both';
-  selectedAuthorities: string[];
-}
-
-interface AnalyticsState {
-  data: DataState;
-  calculation: CalculationState;
-  parameters: ParameterState;
-  
-  // Data Actions
-  setSummaryData: (data: SummaryData) => void;
-  setFullDataset: (data: RoadSegment[]) => void;
-  setLoadProgress: (progress: DataLoadProgress) => void;
-  setLoadError: (error: string | null) => void;
-  setIsLoading: (loading: boolean) => void;
-  clearData: () => void;
-  
-  // Calculation Actions
-  setCalculationResults: (results: {
-    segments: CalculatedRoadSegment[];
-    summary: CalculationSummary;
-    timestamp: number;
-  }) => void;
-  clearCalculationResults: () => void;
-  
-  // Parameter Actions
-  updateThresholds: (thresholds: Partial<CalculationParams['thresholds']>) => void;
-  updateCosts: (costs: Partial<CalculationParams['costs']>) => void;
-  setSelectedYear: (year: '2011' | '2018' | 'both') => void;
-  setSelectedAuthorities: (authorities: string[]) => void;
-  resetParameters: () => void;
-}
-
-const initialDataState: DataState = {
+// Define the initial state with a flat structure
+const initialState = {
   summaryData: null,
   fullDataset: null,
   loadProgress: { stage: 'idle', summaryLoaded: false, fullLoaded: false, progress: 0 },
   loadError: null,
   isLoading: false,
-};
-
-const initialCalculationState: CalculationState = {
   results: {
     segments: null,
     summary: null,
     timestamp: null,
   },
-};
-
-const initialParameterState: ParameterState = {
   thresholds: DEFAULT_PARAMS.thresholds,
   costs: DEFAULT_PARAMS.costs,
   selectedYear: DEFAULT_PARAMS.selectedYear,
@@ -83,32 +27,48 @@ const initialParameterState: ParameterState = {
 };
 
 export const useAnalyticsStore = create<AnalyticsState>((set) => ({
-  data: initialDataState,
-  calculation: initialCalculationState,
-  parameters: initialParameterState,
+  ...initialState,
 
   // Data Actions
-  setSummaryData: (data) => set((state) => ({ data: { ...state.data, summaryData: data } })),
-  setFullDataset: (data) => set((state) => ({ data: { ...state.data, fullDataset: data } })),
-  setLoadProgress: (progress) => set((state) => ({ data: { ...state.data, loadProgress: progress } })),
-  setLoadError: (error) => set((state) => ({ data: { ...state.data, loadError: error } })),
-  setIsLoading: (loading) => set((state) => ({ data: { ...state.data, isLoading: loading } })),
-  clearData: () => set({ data: initialDataState }),
+  setSummaryData: (data: SummaryData | null) => set({ summaryData: data }),
+  setFullDataset: (data: RoadSegment[] | null) => set({ fullDataset: data }),
+  setLoadProgress: (progress: DataLoadProgress) => set({ loadProgress: progress }),
+  setLoadError: (error: string | null) => set({ loadError: error }),
+  setIsLoading: (loading: boolean) => set({ isLoading: loading }),
+  clearData: () => set({
+    summaryData: initialState.summaryData,
+    fullDataset: initialState.fullDataset,
+    loadError: initialState.loadError,
+    loadProgress: initialState.loadProgress,
+    isLoading: initialState.isLoading,
+  }),
 
   // Calculation Actions
-  setCalculationResults: (results) => set((state) => ({ calculation: { ...state.calculation, results } })),
-  clearCalculationResults: () => set({ calculation: initialCalculationState }),
+  setCalculationResults: (results: AnalyticsState['results']) => set({ results }),
+  clearCalculationResults: () => set({ results: initialState.results }),
 
   // Parameter Actions
-  updateThresholds: (thresholds) =>
-    set((state) => ({
-      parameters: { ...state.parameters, thresholds: { ...state.parameters.thresholds, ...thresholds } },
+  // Using Immer for safe nested updates
+  updateThresholds: (newThresholds: Partial<Thresholds>) =>
+    set(produce((state: AnalyticsState) => {
+      // Safely merge partial threshold updates
+      for (const key of Object.keys(newThresholds) as Array<keyof Thresholds>) {
+        if (state.thresholds[key] && newThresholds[key]) {
+          // Use Object.assign for a shallow merge of the inner object
+          Object.assign(state.thresholds[key], newThresholds[key]);
+        }
+      }
     })),
-  updateCosts: (costs) =>
-    set((state) => ({
-      parameters: { ...state.parameters, costs: { ...state.parameters.costs, ...costs } },
-    })),
-  setSelectedYear: (year) => set((state) => ({ parameters: { ...state.parameters, selectedYear: year } })),
-  setSelectedAuthorities: (authorities) => set((state) => ({ parameters: { ...state.parameters, selectedAuthorities: authorities } })),
-  resetParameters: () => set({ parameters: initialParameterState }),
+  updateCosts: (newCosts: Partial<Costs>) =>
+    set((state: AnalyticsState) => ({ costs: { ...state.costs, ...newCosts } })),
+  setSelectedYear: (year: '2011' | '2018' | 'both') => set({ selectedYear: year }),
+  setSelectedAuthorities: (authorities: string[]) =>
+    set({ selectedAuthorities: authorities }),
+  resetParameters: () =>
+    set({
+      thresholds: initialState.thresholds,
+      costs: initialState.costs,
+      selectedYear: initialState.selectedYear,
+      selectedAuthorities: initialState.selectedAuthorities,
+    }),
 }));
