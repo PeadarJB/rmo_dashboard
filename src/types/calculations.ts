@@ -94,11 +94,21 @@ export interface CalculationSummary {
   '2018': YearSummary;
 }
 
+// This is what the worker produces
 export interface WorkerOutput {
   segments: CalculatedRoadSegment[];
   summary: CalculationSummary;
   calculationId: string;
   timestamp: number;
+}
+
+// This is what gets stored in the store's cache
+// Keeping them separate allows flexibility if store needs different structure
+export interface CalculationResults {
+  segments: CalculatedRoadSegment[] | null;
+  summary: CalculationSummary | null;
+  timestamp: number | null;
+  calculationId: string | null;
 }
 
 export interface WorkerProgress {
