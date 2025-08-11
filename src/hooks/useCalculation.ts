@@ -1,26 +1,28 @@
+// src/hooks/useCalculation.ts
 import { useState, useCallback, useMemo } from 'react';
 import { useAnalyticsStore } from '@/store/useAnalyticsStore';
 import { workerService } from '@/services/workerService';
-import type { CalculationParams, WorkerProgress } from '@/types/calculations';
+import type { CalculationParams, WorkerProgress, WorkerOutput } from '@/types/calculations';
 
 export const useCalculation = () => {
   const [isCalculating, setIsCalculating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [progress, setProgress] = useState<WorkerProgress | null>(null);
 
   const {
-    fullDataset,
+    data: { fullDataset },
     thresholds,
     costs,
     selectedYear,
     selectedAuthorities,
+    results,
     setCalculationResults,
+    clearCalculationResults,
   } = useAnalyticsStore();
 
-  const runCalculation = useCallback(async () => {
+  const calculate = useCallback(async (): Promise<void> => {
     if (!fullDataset) {
-      setError('Full dataset not loaded.');
-      return;
+      throw new Error('Full dataset not loaded');
     }
 
     setIsCalculating(true);
@@ -31,7 +33,7 @@ export const useCalculation = () => {
       thresholds,
       costs,
       selectedYear,
-      localAuthorities: selectedAuthorities,
+      localAuthorities: selectedAuthorities.length > 0 ? selectedAuthorities : undefined,
     };
 
     try {
@@ -40,41 +42,38 @@ export const useCalculation = () => {
         params,
         (p: WorkerProgress) => setProgress(p)
       );
+      
       setCalculationResults({
         segments: result.segments,
         summary: result.summary,
         timestamp: result.timestamp,
       });
-      // The 'calculationId' from the worker is available in 'result.calculationId'.
-      // Returning it here marks it as "read", resolving the unused variable warning.
-      return result.calculationId;
     } catch (e) {
-      const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
-      setError(errorMessage);
-      console.error('Calculation hook error:', e);
+      const error = e instanceof Error ? e : new Error('Calculation failed');
+      setError(error);
+      throw error;
     } finally {
       setIsCalculating(false);
     }
-  }, [
-    fullDataset,
-    thresholds,
-    costs,
-    selectedYear,
-    selectedAuthorities,
-    setCalculationResults,
-  ]);
+  }, [fullDataset, thresholds, costs, selectedYear, selectedAuthorities, setCalculationResults]);
 
-  const abortCalculation = useCallback(() => {
+  const abort = useCallback(() => {
     workerService.abort();
     setIsCalculating(false);
   }, []);
 
+  const clearCache = useCallback(() => {
+    workerService.clearCache();
+    clearCalculationResults();
+  }, [clearCalculationResults]);
+
   return useMemo(() => ({
+    calculate,
+    abort,
+    clearCache,
     isCalculating,
     error,
     progress,
-    runCalculation,
-    abortCalculation,
-  }), [isCalculating, error, progress, runCalculation, abortCalculation]);
+    results,
+  }), [calculate, abort, clearCache, isCalculating, error, progress, results]);
 };
-
