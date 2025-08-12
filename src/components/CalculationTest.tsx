@@ -7,11 +7,19 @@ import { useAnalyticsStore } from '@/store/useAnalyticsStore';
 
 export const CalculationTest: React.FC = () => {
   const { calculate, abort, isCalculating, progress, error, results, clearCache } = useCalculation();
-  const hasData = useAnalyticsStore(state => !!state.data.fullDataset);
-  const segmentCount = useAnalyticsStore(state => state.data.fullDataset?.length || 0);
+  
+  // Use nested store structure
+  const fullDataset = useAnalyticsStore(state => state.data.fullDataset);
+  const hasData = !!fullDataset;
+  const segmentCount = fullDataset?.length || 0;
 
   const handleCalculate = async () => {
-    await calculate();
+    try {
+      await calculate();
+    } catch (err) {
+      // Error is already handled by the hook
+      console.error('Calculation failed:', err);
+    }
   };
 
   return (
@@ -49,8 +57,8 @@ export const CalculationTest: React.FC = () => {
           </div>
         )}
 
-        {/* Results */}
-        {results && (
+        {/* Results - with proper null checks */}
+        {results && results.segments && results.summary && (
           <Card size="small" title="Calculation Results">
             <Row gutter={16}>
               <Col span={8}>
@@ -71,7 +79,7 @@ export const CalculationTest: React.FC = () => {
               <Col span={8}>
                 <Statistic
                   title="Calculation ID"
-                  value={results.calculationId.slice(0, 8)}
+                  value={results.calculationId ? results.calculationId.slice(0, 8) : 'N/A'}
                 />
               </Col>
             </Row>
