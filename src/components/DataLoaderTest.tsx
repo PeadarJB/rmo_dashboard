@@ -11,15 +11,15 @@ export const DataLoaderTest: React.FC = () => {
   const [progress, setProgress] = useState<DataLoadProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const {
-    setSummaryData,
-    setFullDataset,
-    setLoadProgress,
-    setLoadError,
-    setIsLoading,
-    clearData,
-    data,
-  } = useAnalyticsStore();
+  // Use nested store structure with individual selectors
+  const summaryData = useAnalyticsStore(state => state.data.summaryData);
+  const fullDataset = useAnalyticsStore(state => state.data.fullDataset);
+  const setSummaryData = useAnalyticsStore(state => state.setSummaryData);
+  const setFullDataset = useAnalyticsStore(state => state.setFullDataset);
+  const setLoadProgress = useAnalyticsStore(state => state.setLoadProgress);
+  const setLoadError = useAnalyticsStore(state => state.setLoadError);
+  const setIsLoading = useAnalyticsStore(state => state.setIsLoading);
+  const clearData = useAnalyticsStore(state => state.clearData);
 
   const handleLoadData = async () => {
     setLoading(true);
@@ -88,33 +88,33 @@ export const DataLoaderTest: React.FC = () => {
         )}
 
         {/* Data Stats */}
-        {data.summaryData && (
+        {summaryData && (
           <Card size="small" title="Loaded Data Statistics">
             <Row gutter={16}>
               <Col span={6}>
                 <Statistic
                   title="Total Segments"
-                  value={data.summaryData.totalSegments}
+                  value={summaryData.totalSegments}
                 />
               </Col>
               <Col span={6}>
                 <Statistic
                   title="Total Length"
-                  value={(data.summaryData.totalLength / 1000).toFixed(0)}
+                  value={(summaryData.totalLength / 1000).toFixed(0)}
                   suffix="km"
                 />
               </Col>
               <Col span={6}>
                 <Statistic
                   title="Local Authorities"
-                  value={data.summaryData.localAuthorities.length}
+                  value={summaryData.localAuthorities.length}
                 />
               </Col>
               <Col span={6}>
                 <Statistic
                   title="Full Dataset"
-                  value={data.fullDataset ? 'Loaded' : 'Pending'}
-                  valueStyle={{ color: data.fullDataset ? '#52c41a' : '#faad14' }}
+                  value={fullDataset ? 'Loaded' : 'Pending'}
+                  valueStyle={{ color: fullDataset ? '#52c41a' : '#faad14' }}
                 />
               </Col>
             </Row>
