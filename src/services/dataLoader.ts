@@ -137,7 +137,7 @@ export class DataLoaderService {
     });
 
     try {
-      const response = await this.fetchWithRetry('/data/summary.json');
+      const response = await this.fetchWithRetry('/data/road_network_summary.json');
       const data = await response.json();
       
       // Validate with Zod
@@ -196,7 +196,7 @@ export class DataLoaderService {
     });
 
     try {
-      const response = await this.fetchWithRetry('/data/rmo_dataset_full.json');
+      const response = await this.fetchWithRetry('/data/road_network_full.json');
       
       // Stream parsing for large file
       const reader = response.body?.getReader();
