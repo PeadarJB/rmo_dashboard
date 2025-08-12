@@ -1,10 +1,14 @@
 // src/services/dataLoader.ts
-import { RoadSegment, SummaryData, DataLoadProgress } from '@/types/data';
-import { DatasetSchema, SummaryDataSchema } from '@/utils/validators';
+import type { RoadSegmentData, SummaryData, DataLoadProgress } from '@/types/data';
+import { 
+  FullDatasetSchema,
+  validateSummaryFile,
+  type ValidatedSummaryFile 
+} from '@/utils/validators';
 
 // Define the structure of the cached data
 interface CacheEntry {
-  data: RoadSegment[] | SummaryData;
+  data: RoadSegmentData[] | SummaryData;
   timestamp: number;
   version: string;
 }
@@ -85,6 +89,7 @@ export class DataLoaderService {
         const response = await fetch(url, {
           signal: this.controller.signal,
           headers: {
+            'Accept': 'application/json',
             'Accept-Encoding': 'gzip, deflate',
           },
         });
@@ -93,9 +98,14 @@ export class DataLoaderService {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
+        // Verify we're getting JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error(`Expected JSON, got ${contentType}`);
+        }
+
         return response;
       } catch (error) {
-        // Type guard for AbortError
         if (error instanceof Error && error.name === 'AbortError') {
           throw error;
         }
@@ -104,7 +114,6 @@ export class DataLoaderService {
           throw error;
         }
         
-        // Exponential backoff
         await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
       }
     }
@@ -112,88 +121,109 @@ export class DataLoaderService {
     throw new Error('Max retries reached');
   }
 
-  async loadSummaryData(
-  onProgress?: (progress: DataLoadProgress) => void
-): Promise<SummaryData> {
-  const cacheKey = 'summary';
+  /**
+   * Extract totals from the complex summary file structure
+   */
+  private extractSummaryTotals(summaryFile: ValidatedSummaryFile): SummaryData {
+    let totalSegments = 0;
+    let totalCost = 0;
+    
+    // Aggregate from all counties and years
+    for (const county in summaryFile.summary) {
+      const countyData = summaryFile.summary[county];
+      for (const year in countyData) {
+        const yearData = countyData[year];
+        for (const category in yearData) {
+          const categoryData = yearData[category];
+          // Only count 2018 data for totals (most recent complete survey)
+          if (year === '2018') {
+            totalSegments += categoryData.count;
+            totalCost += categoryData.cost;
+          }
+        }
+      }
+    }
 
-  // Check cache first
-  const cached = await this.getFromCache(cacheKey);
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    onProgress?.({
-      stage: 'complete',
-      summaryLoaded: true,
-      fullLoaded: false,
-      progress: 100,
-    });
-    return cached.data as SummaryData;
+    return {
+      totalSegments,
+      totalLength: totalSegments * 100, // Each segment is 100m
+      totalCost,
+      localAuthorities: summaryFile.metadata.localAuthorities,
+      lastUpdated: new Date().toISOString(),
+      // Include the rich data
+      metadata: summaryFile.metadata,
+      countyBreakdown: summaryFile.summary,
+    };
   }
 
-  onProgress?.({
-    stage: 'loading-summary',
-    summaryLoaded: false,
-    fullLoaded: false,
-    progress: 0,
-  });
+  async loadSummaryData(
+    onProgress?: (progress: DataLoadProgress) => void
+  ): Promise<SummaryData> {
+    const cacheKey = 'summary';
 
-  try {
-    const response = await this.fetchWithRetry('/data/road_network_summary.json');
-    const data = await response.json();
-    
-    // DIAGNOSTIC: Log the actual structure
-    console.log('Summary data structure:', data);
-    console.log('Summary data keys:', Object.keys(data));
-    if (Array.isArray(data)) {
-      console.log('Data is an array with length:', data.length);
-      console.log('First item:', data[0]);
+    // Check cache first
+    const cached = await this.getFromCache(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      onProgress?.({
+        stage: 'complete',
+        summaryLoaded: true,
+        fullLoaded: false,
+        progress: 100,
+      });
+      return cached.data as SummaryData;
     }
-    
-    // Try to map the actual structure to our expected structure
-    // This is a temporary fix - we'll update based on what we see
-    const mapped: SummaryData = {
-      totalSegments: data.totalSegments || data.total_segments || data.length || 0,
-      totalLength: data.totalLength || data.total_length || 0,
-      totalCost: data.totalCost || data.total_cost || 0,
-      localAuthorities: data.localAuthorities || data.local_authorities || data.las || [],
-      lastUpdated: data.lastUpdated || data.last_updated || new Date().toISOString(),
-    };
-    
-    console.log('Mapped summary data:', mapped);
-    
-    // Validate the mapped data
-    const validated = SummaryDataSchema.parse(mapped);
-
-    // Cache the result
-    await this.saveToCache(cacheKey, {
-      data: validated,
-      timestamp: Date.now(),
-      version: CACHE_VERSION,
-    });
 
     onProgress?.({
-      stage: 'complete',
-      summaryLoaded: true,
-      fullLoaded: false,
-      progress: 100,
-    });
-
-    return validated;
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    onProgress?.({
-      stage: 'error',
+      stage: 'loading-summary',
       summaryLoaded: false,
       fullLoaded: false,
       progress: 0,
-      error: errorMessage,
     });
-    throw new Error(`Failed to load summary data: ${errorMessage}`);
+
+    try {
+      const response = await this.fetchWithRetry('/data/road_network_summary.json');
+      const data = await response.json();
+      
+      // Validate and parse the complex summary structure
+      const validatedFile = validateSummaryFile(data);
+      if (!validatedFile) {
+        throw new Error('Invalid summary file structure');
+      }
+
+      // Extract simplified summary for UI
+      const summary = this.extractSummaryTotals(validatedFile);
+
+      // Cache the result
+      await this.saveToCache(cacheKey, {
+        data: summary,
+        timestamp: Date.now(),
+        version: CACHE_VERSION,
+      });
+
+      onProgress?.({
+        stage: 'complete',
+        summaryLoaded: true,
+        fullLoaded: false,
+        progress: 100,
+      });
+
+      return summary;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      onProgress?.({
+        stage: 'error',
+        summaryLoaded: false,
+        fullLoaded: false,
+        progress: 0,
+        error: errorMessage,
+      });
+      throw new Error(`Failed to load summary data: ${errorMessage}`);
+    }
   }
-}
 
   async loadFullDataset(
     onProgress?: (progress: DataLoadProgress) => void
-  ): Promise<RoadSegment[]> {
+  ): Promise<RoadSegmentData[]> {
     const cacheKey = 'full-dataset';
 
     // Check cache
@@ -205,7 +235,7 @@ export class DataLoaderService {
         fullLoaded: true,
         progress: 100,
       });
-      return cached.data as RoadSegment[];
+      return cached.data as RoadSegmentData[];
     }
 
     onProgress?.({
@@ -246,7 +276,7 @@ export class DataLoaderService {
 
       // Parse and validate
       const parsed = JSON.parse(chunks);
-      const validated = DatasetSchema.parse(parsed);
+      const validated = FullDatasetSchema.parse(parsed);
 
       // Cache the result
       await this.saveToCache(cacheKey, {
@@ -278,7 +308,7 @@ export class DataLoaderService {
 
   async loadTwoStage(
     onProgress?: (progress: DataLoadProgress) => void
-  ): Promise<{ summary: SummaryData; full: RoadSegment[] }> {
+  ): Promise<{ summary: SummaryData; full: RoadSegmentData[] }> {
     // Load summary first for immediate interaction
     const summary = await this.loadSummaryData(onProgress);
     
