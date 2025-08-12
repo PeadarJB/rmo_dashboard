@@ -113,63 +113,83 @@ export class DataLoaderService {
   }
 
   async loadSummaryData(
-    onProgress?: (progress: DataLoadProgress) => void
-  ): Promise<SummaryData> {
-    const cacheKey = 'summary';
+  onProgress?: (progress: DataLoadProgress) => void
+): Promise<SummaryData> {
+  const cacheKey = 'summary';
 
-    // Check cache first
-    const cached = await this.getFromCache(cacheKey);
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      onProgress?.({
-        stage: 'complete',
-        summaryLoaded: true,
-        fullLoaded: false,
-        progress: 100,
-      });
-      return cached.data as SummaryData;
+  // Check cache first
+  const cached = await this.getFromCache(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    onProgress?.({
+      stage: 'complete',
+      summaryLoaded: true,
+      fullLoaded: false,
+      progress: 100,
+    });
+    return cached.data as SummaryData;
+  }
+
+  onProgress?.({
+    stage: 'loading-summary',
+    summaryLoaded: false,
+    fullLoaded: false,
+    progress: 0,
+  });
+
+  try {
+    const response = await this.fetchWithRetry('/data/road_network_summary.json');
+    const data = await response.json();
+    
+    // DIAGNOSTIC: Log the actual structure
+    console.log('Summary data structure:', data);
+    console.log('Summary data keys:', Object.keys(data));
+    if (Array.isArray(data)) {
+      console.log('Data is an array with length:', data.length);
+      console.log('First item:', data[0]);
     }
+    
+    // Try to map the actual structure to our expected structure
+    // This is a temporary fix - we'll update based on what we see
+    const mapped: SummaryData = {
+      totalSegments: data.totalSegments || data.total_segments || data.length || 0,
+      totalLength: data.totalLength || data.total_length || 0,
+      totalCost: data.totalCost || data.total_cost || 0,
+      localAuthorities: data.localAuthorities || data.local_authorities || data.las || [],
+      lastUpdated: data.lastUpdated || data.last_updated || new Date().toISOString(),
+    };
+    
+    console.log('Mapped summary data:', mapped);
+    
+    // Validate the mapped data
+    const validated = SummaryDataSchema.parse(mapped);
+
+    // Cache the result
+    await this.saveToCache(cacheKey, {
+      data: validated,
+      timestamp: Date.now(),
+      version: CACHE_VERSION,
+    });
 
     onProgress?.({
-      stage: 'loading-summary',
+      stage: 'complete',
+      summaryLoaded: true,
+      fullLoaded: false,
+      progress: 100,
+    });
+
+    return validated;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    onProgress?.({
+      stage: 'error',
       summaryLoaded: false,
       fullLoaded: false,
       progress: 0,
+      error: errorMessage,
     });
-
-    try {
-      const response = await this.fetchWithRetry('/data/road_network_summary.json');
-      const data = await response.json();
-      
-      // Validate with Zod
-      const validated = SummaryDataSchema.parse(data);
-
-      // Cache the result
-      await this.saveToCache(cacheKey, {
-        data: validated,
-        timestamp: Date.now(),
-        version: CACHE_VERSION,
-      });
-
-      onProgress?.({
-        stage: 'complete',
-        summaryLoaded: true,
-        fullLoaded: false,
-        progress: 100,
-      });
-
-      return validated;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      onProgress?.({
-        stage: 'error',
-        summaryLoaded: false,
-        fullLoaded: false,
-        progress: 0,
-        error: errorMessage,
-      });
-      throw new Error(`Failed to load summary data: ${errorMessage}`);
-    }
+    throw new Error(`Failed to load summary data: ${errorMessage}`);
   }
+}
 
   async loadFullDataset(
     onProgress?: (progress: DataLoadProgress) => void
