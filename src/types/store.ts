@@ -1,5 +1,10 @@
 // src/types/store.ts
-import type { RoadSegment, SummaryData, DataLoadProgress } from './data';
+import type { 
+  RoadSegmentData, 
+  SummaryData, 
+  DataLoadProgress,
+  SurveyYear 
+} from './data';
 import type { 
   Thresholds, 
   Costs, 
@@ -12,7 +17,7 @@ import type {
 
 export interface DataSlice {
   summaryData: SummaryData | null;
-  fullDataset: RoadSegment[] | null;
+  fullDataset: RoadSegmentData[] | null;  // Updated to use new type
 }
 
 export interface UISlice {
@@ -24,8 +29,8 @@ export interface UISlice {
 export interface ParametersSlice {
   thresholds: Thresholds;
   costs: Costs;
-  selectedYear: '2011' | '2018' | 'both';
-  selectedAuthorities: string[];
+  selectedYear: SurveyYear | 'both';  // Updated to use SurveyYear type
+  selectedCounties: string[];         // Renamed from selectedAuthorities
 }
 
 export interface CacheSlice {
@@ -52,7 +57,7 @@ export interface AnalyticsState {
 
   // ============= DATA ACTIONS =============
   setSummaryData: (data: SummaryData | null) => void;
-  setFullDataset: (data: RoadSegment[] | null) => void;
+  setFullDataset: (data: RoadSegmentData[] | null) => void;  // Updated type
   clearData: () => void;
 
   // ============= UI ACTIONS =============
@@ -72,8 +77,8 @@ export interface AnalyticsState {
   // ============= PARAMETER ACTIONS =============
   updateThresholds: (thresholds: Partial<Thresholds>) => void;
   updateCosts: (costs: Partial<Costs>) => void;
-  setSelectedYear: (year: '2011' | '2018' | 'both') => void;
-  setSelectedAuthorities: (authorities: string[]) => void;
+  setSelectedYear: (year: SurveyYear | 'both') => void;  // Updated type
+  setSelectedCounties: (counties: string[]) => void;      // Renamed
   resetParameters: () => void;
 
   // ============= USER ACTIONS (placeholder) =============
@@ -89,7 +94,13 @@ export interface AnalyticsSelectors {
   isReady: (state: AnalyticsState) => boolean;
   totalSegments: (state: AnalyticsState) => number;
   totalCost2018: (state: AnalyticsState) => number | null;
-  selectedAuthorityNames: (state: AnalyticsState) => string[];
+  selectedCountyNames: (state: AnalyticsState) => string[];  // Renamed
+  
+  // New selectors for working with the actual data structure
+  getSegmentById: (state: AnalyticsState, id: number) => RoadSegmentData | undefined;
+  getSegmentsByCounty: (state: AnalyticsState, county: string) => RoadSegmentData[];
+  getSegmentsByRoad: (state: AnalyticsState, roadNumber: string) => RoadSegmentData[];
+  hasDataForYear: (state: AnalyticsState, year: SurveyYear) => boolean;
 }
 
 // ============= ACTION PAYLOAD TYPES =============
@@ -109,4 +120,31 @@ export interface InitialStateValues {
   parameters: ParametersSlice;
   cache: CacheSlice;
   user: UserSlice;
+}
+
+// ============= HELPER TYPES =============
+
+// For filtering segments
+export interface SegmentFilter {
+  counties?: string[];
+  roadNumbers?: string[];
+  year?: SurveyYear;
+  hasValidData?: boolean;
+}
+
+// For aggregating statistics
+export interface NetworkStatistics {
+  totalSegments: number;
+  totalLength: number;       // meters
+  segmentsByCounty: Record<string, number>;
+  segmentsByRoad: Record<string, number>;
+  averageConditions: {
+    [year in SurveyYear]: {
+      iri: number;
+      rut: number;
+      psci: number;
+      csc: number;
+      mpd: number;
+    } | null;
+  };
 }
