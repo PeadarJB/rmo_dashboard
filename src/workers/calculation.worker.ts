@@ -12,51 +12,75 @@ import type {
   YearSummary,
   CategorySummary,
 } from '@/types/calculations';
-import type { RoadSegment, RoadConditions } from '@/types/data';
+import type { RoadSegmentData, RoadConditions, SurveyYear } from '@/types/data';
 
 class CalculationWorker {
   private abortController: AbortController | null = null;
+  private readonly SEGMENT_LENGTH = 100; // Fixed 100m per segment
+
+  /**
+   * Get the width for calculations - prefer 2018, fallback to 2011
+   */
+  private getSegmentWidth(segment: RoadSegmentData): number {
+    if (segment.data["2018"]?.width) {
+      return segment.data["2018"].width;
+    }
+    if (segment.data["2011"]?.width) {
+      return segment.data["2011"].width;
+    }
+    return 7; // Default width if no data
+  }
 
   /**
    * Determine maintenance category based on condition parameters
    */
   private determineCategory(
-    conditions: RoadConditions,
+    conditions: RoadConditions | null,
     thresholds: CalculationParams['thresholds']
-  ): MaintenanceCategory {
+  ): MaintenanceCategory | null {
+    // No category if no conditions data
+    if (!conditions) return null;
+
+    // Handle null values - treat as worst case for safety
+    const iri = conditions.iri ?? 999;  // High value = poor condition
+    const rut = conditions.rut ?? 999;
+    const psci = conditions.psci ?? 0;  // Low value = poor condition
+    const csc = conditions.csc ?? 0;
+    const mpd = conditions.mpd ?? 0;
+
     // Priority 1: Road Reconstruction
     if (
-      conditions.iri > thresholds.reconstruction.iri ||
-      conditions.rut > thresholds.reconstruction.rut ||
-      conditions.psci <= thresholds.reconstruction.psci
+      iri > thresholds.reconstruction.iri ||
+      rut > thresholds.reconstruction.rut ||
+      psci <= thresholds.reconstruction.psci
     ) {
       return 'Road Reconstruction';
     }
 
     // Priority 2: Structural Overlay
     if (
-      conditions.iri >= thresholds.overlay.iri ||
-      conditions.rut >= thresholds.overlay.rut ||
-      conditions.psci <= thresholds.overlay.psci
+      iri >= thresholds.overlay.iri ||
+      rut >= thresholds.overlay.rut ||
+      psci <= thresholds.overlay.psci
     ) {
       return 'Structural Overlay';
     }
 
     // Priority 3: Surface Restoration
     if (
-      (conditions.psci <= thresholds.restoration.psci_upper &&
-        conditions.psci >= thresholds.restoration.psci_lower) ||
-      (conditions.iri >= thresholds.restoration.iri && conditions.psci >= 7)
+      (psci <= thresholds.restoration.psci_upper &&
+        psci >= thresholds.restoration.psci_lower) ||
+      (iri >= thresholds.restoration.iri && psci >= 7)
     ) {
       return 'Surface Restoration';
     }
 
     // Priority 4: Restoration of Skid Resistance
     if (
-      (conditions.psci <= thresholds.skid.psci_upper &&
-        conditions.psci >= thresholds.skid.psci_lower) ||
-      (conditions.csc <= thresholds.skid.csc && conditions.psci >= 9) ||
-      (conditions.mpd <= thresholds.skid.mpd && conditions.psci >= 9)
+      (psci <= thresholds.skid.psci_upper &&
+        psci >= thresholds.skid.psci_lower) ||
+      (csc <= thresholds.skid.csc && psci >= 9) ||
+      (mpd <= thresholds.skid.mpd && psci >= 9)
     ) {
       return 'Restoration of Skid Resistance';
     }
@@ -69,10 +93,12 @@ class CalculationWorker {
    * Calculate cost for a segment based on category and area
    */
   private calculateCost(
-    category: MaintenanceCategory,
+    category: MaintenanceCategory | null,
     area: number,
     costs: CalculationParams['costs']
   ): number {
+    if (!category) return 0;
+
     const costMap: Record<MaintenanceCategory, number> = {
       'Road Reconstruction': costs.reconstruction,
       'Structural Overlay': costs.overlay,
@@ -88,29 +114,55 @@ class CalculationWorker {
    * Process a single road segment
    */
   private processSegment(
-    segment: RoadSegment,
+    segment: RoadSegmentData,
     params: CalculationParams
   ): CalculatedRoadSegment {
-    // Calculate conditions for 2011
-    const category2011 = this.determineCategory(segment.conditions_2011, params.thresholds);
-    const cost2011 = this.calculateCost(category2011, segment.conditions_2011.sqm, params.costs);
+    const width = this.getSegmentWidth(segment);
+    const segmentArea = this.SEGMENT_LENGTH * width; // 100m × width
 
-    // Calculate conditions for 2018
-    const category2018 = this.determineCategory(segment.conditions_2018, params.thresholds);
-    const cost2018 = this.calculateCost(category2018, segment.conditions_2018.sqm, params.costs);
+    // Process 2011 data
+    let calculated2011: CalculatedConditions | null = null;
+    if (segment.data["2011"]) {
+      const category = this.determineCategory(segment.data["2011"], params.thresholds);
+      const cost = this.calculateCost(category, segmentArea, params.costs);
+      calculated2011 = {
+        ...segment.data["2011"],
+        category: category || 'Routine Maintenance',
+        cost,
+      };
+    }
+
+    // Process 2018 data
+    let calculated2018: CalculatedConditions | null = null;
+    if (segment.data["2018"]) {
+      const category = this.determineCategory(segment.data["2018"], params.thresholds);
+      const cost = this.calculateCost(category, segmentArea, params.costs);
+      calculated2018 = {
+        ...segment.data["2018"],
+        category: category || 'Routine Maintenance',
+        cost,
+      };
+    }
+
+    // Process 2025 data (will be null for now)
+    let calculated2025: CalculatedConditions | null = null;
+    if (segment.data["2025"]) {
+      const category = this.determineCategory(segment.data["2025"], params.thresholds);
+      const cost = this.calculateCost(category, segmentArea, params.costs);
+      calculated2025 = {
+        ...segment.data["2025"],
+        category: category || 'Routine Maintenance',
+        cost,
+      };
+    }
 
     return {
       ...segment,
-      conditions_2011: {
-        ...segment.conditions_2011,
-        category: category2011,
-        cost: cost2011,
-      } as CalculatedConditions,
-      conditions_2018: {
-        ...segment.conditions_2018,
-        category: category2018,
-        cost: cost2018,
-      } as CalculatedConditions,
+      data: {
+        "2011": calculated2011,
+        "2018": calculated2018,
+        "2025": calculated2025,
+      },
     };
   }
 
@@ -138,53 +190,59 @@ class CalculationWorker {
   }
 
   /**
-   * Aggregate results into summary
+   * Aggregate results into summary for a specific year
    */
   private aggregateResults(
     segments: CalculatedRoadSegment[],
-    year: '2011' | '2018'
+    year: SurveyYear
   ): YearSummary {
     const summary: YearSummary = {
       total_cost: 0,
       total_length_m: 0,
-      total_segments: segments.length,
+      total_segments: 0,
       by_category: this.initializeCategorySummary(),
-      by_la: {},
+      by_county: {},
     };
 
     for (const segment of segments) {
-      const conditions = year === '2011' ? segment.conditions_2011 : segment.conditions_2018;
-      const category = conditions.category;
+      const conditions = segment.data[year];
       
-      if (!category) continue;
+      // Skip segments with no data for this year
+      if (!conditions || !conditions.category) continue;
+
+      const category = conditions.category;
+      const segmentLength = this.SEGMENT_LENGTH;
 
       // Update totals
       summary.total_cost += conditions.cost;
-      summary.total_length_m += segment.length_m;
+      summary.total_length_m += segmentLength;
+      summary.total_segments += 1;
 
       // Update category summary
       summary.by_category[category].total_cost += conditions.cost;
-      summary.by_category[category].total_length_m += segment.length_m;
+      summary.by_category[category].total_length_m += segmentLength;
       summary.by_category[category].segment_count += 1;
 
-      // Update LA summary
-      if (!summary.by_la[segment.la_name]) {
-        summary.by_la[segment.la_name] = {
+      // Update county summary
+      if (!summary.by_county[segment.county]) {
+        summary.by_county[segment.county] = {
           total_cost: 0,
           total_length_m: 0,
           segment_count: 0,
         };
       }
-      summary.by_la[segment.la_name].total_cost += conditions.cost;
-      summary.by_la[segment.la_name].total_length_m += segment.length_m;
-      summary.by_la[segment.la_name].segment_count += 1;
+      summary.by_county[segment.county].total_cost += conditions.cost;
+      summary.by_county[segment.county].total_length_m += segmentLength;
+      summary.by_county[segment.county].segment_count += 1;
     }
 
     // Calculate percentages
-    for (const category in summary.by_category) {
-      const cat = category as MaintenanceCategory;
-      summary.by_category[cat].percentage = 
-        (summary.by_category[cat].total_length_m / summary.total_length_m) * 100;
+    if (summary.total_length_m > 0) {
+      for (const category in summary.by_category) {
+        const cat = category as MaintenanceCategory;
+        summary.by_category[cat].percentage = 
+          (summary.by_category[cat].total_length_m / summary.total_length_m) * 100;
+      }
     }
 
     return summary;
@@ -194,7 +252,7 @@ class CalculationWorker {
    * Main calculation method exposed via Comlink
    */
   async calculate(
-    segments: RoadSegment[],
+    segments: RoadSegmentData[],
     params: CalculationParams,
     progressCallback?: (progress: WorkerProgress) => void
   ): Promise<WorkerOutput> {
@@ -212,11 +270,12 @@ class CalculationWorker {
         message: 'Preparing calculation...',
       });
 
-      // Filter segments if local authorities specified
+      // Filter segments if counties specified
       let filteredSegments = segments;
       if (params.localAuthorities && params.localAuthorities.length > 0) {
+        // Note: localAuthorities in params actually contains county codes
         filteredSegments = segments.filter(s => 
-          params.localAuthorities!.includes(s.la_name)
+          params.localAuthorities!.includes(s.county)
         );
       }
 
@@ -256,13 +315,15 @@ class CalculationWorker {
         message: 'Aggregating results...',
       });
 
+      // Create summaries based on selected year(s)
       const summary: CalculationSummary = {
-        '2011': params.selectedYear !== '2018' 
-          ? this.aggregateResults(calculatedSegments, '2011')
-          : this.aggregateResults([], '2011'), // Empty if not selected
-        '2018': params.selectedYear !== '2011'
-          ? this.aggregateResults(calculatedSegments, '2018')
-          : this.aggregateResults([], '2018'), // Empty if not selected
+        '2011': params.selectedYear === '2018' 
+          ? this.aggregateResults([], '2011') // Empty if not selected
+          : this.aggregateResults(calculatedSegments, '2011'),
+        '2018': params.selectedYear === '2011'
+          ? this.aggregateResults([], '2018') // Empty if not selected
+          : this.aggregateResults(calculatedSegments, '2018'),
+        '2025': this.aggregateResults([], '2025'), // Always empty for now
       };
 
       const durationMs = Date.now() - startTime;
