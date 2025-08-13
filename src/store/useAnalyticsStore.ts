@@ -6,6 +6,7 @@ import type {
   InitialStateValues,
   SetCalculationResultsPayload 
 } from '@/types/store';
+import type { SurveyYear } from '@/types/data';
 import { DEFAULT_THRESHOLDS, DEFAULT_COSTS } from '@/types/calculations';
 
 // Define the initial nested state structure
@@ -27,8 +28,8 @@ const initialState: InitialStateValues = {
   parameters: {
     thresholds: DEFAULT_THRESHOLDS,
     costs: DEFAULT_COSTS,
-    selectedYear: '2018' as const,
-    selectedAuthorities: [],
+    selectedYear: '2018' as SurveyYear,  // Using SurveyYear type
+    selectedCounties: [],  // Renamed from selectedAuthorities
   },
   cache: {
     results: {
@@ -135,9 +136,9 @@ export const useAnalyticsStore = create<AnalyticsState>((set) => ({
       state.parameters.selectedYear = year;
     })),
 
-  setSelectedAuthorities: (authorities) =>
+  setSelectedCounties: (counties) =>  // Renamed from setSelectedAuthorities
     set(produce((state: AnalyticsState) => {
-      state.parameters.selectedAuthorities = authorities;
+      state.parameters.selectedCounties = counties;
     })),
 
   resetParameters: () =>
@@ -145,8 +146,8 @@ export const useAnalyticsStore = create<AnalyticsState>((set) => ({
       state.parameters = {
         thresholds: DEFAULT_THRESHOLDS,
         costs: DEFAULT_COSTS,
-        selectedYear: '2018' as const,
-        selectedAuthorities: [],
+        selectedYear: '2018' as SurveyYear,
+        selectedCounties: [],
       };
     })),
 
@@ -175,4 +176,14 @@ export const selectors = {
   
   totalCost2018: (state: AnalyticsState) => 
     state.cache.results.summary?.['2018']?.total_cost ?? null,
+  
+  // New selectors for the actual data structure
+  getSegmentById: (state: AnalyticsState, id: number) =>
+    state.data.fullDataset?.find(seg => seg.id === id),
+  
+  getSegmentsByCounty: (state: AnalyticsState, county: string) =>
+    state.data.fullDataset?.filter(seg => seg.county === county) ?? [],
+  
+  getSegmentsByRoad: (state: AnalyticsState, roadNumber: string) =>
+    state.data.fullDataset?.filter(seg => seg.roadNumber === roadNumber) ?? [],
 };
