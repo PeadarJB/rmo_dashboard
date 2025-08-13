@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 // ============= BASE SCHEMAS =============
 
-// Survey years as literal union (removed if unused, or export if needed elsewhere)
+// Survey years as literal union
 export const SurveyYearSchema = z.enum(['2011', '2018', '2025']);
 
 // Road conditions for a specific year - all nullable except width and sqm
@@ -35,23 +35,21 @@ export const FullDatasetSchema = z.array(RoadSegmentDataSchema);
 
 // ============= SUMMARY FILE SCHEMAS =============
 
-// Default parameters from summary metadata
+// Default parameters from your actual JSON structure
 const DefaultParametersSchema = z.object({
-  roadReconstruction_iri: z.number(),
-  roadReconstruction_rut: z.number(),
-  roadReconstruction_psci: z.number(),
-  structuralOverlay_iri: z.number(),
-  structuralOverlay_rut: z.number(),
-  structuralOverlay_psci: z.number(),
-  surfaceRestoration_psci_a: z.number(),
-  surfaceRestoration_psci_b: z.number(),
-  surfaceRestoration_iri: z.number(),
-  surfaceRestoration_psci_c: z.number(),
-  restorationOfSkidResistance_psci_a: z.number(),
-  restorationOfSkidResistance_psci_b: z.number(),
-  restorationOfSkidResistance_csc: z.number(),
-  restorationOfSkidResistance_psci_c: z.number(),
-  restorationOfSkidResistance_mpd: z.number(),
+  reconstruction_iri: z.number(),
+  reconstruction_rut: z.number(),
+  reconstruction_psci: z.number(),
+  overlay_iri: z.number(),
+  overlay_rut: z.number(),
+  overlay_psci: z.number(),
+  restoration_psci_lower: z.number(),
+  restoration_psci_upper: z.number(),
+  restoration_iri: z.number(),
+  skid_psci_lower: z.number(),
+  skid_psci_upper: z.number(),
+  skid_csc: z.number(),
+  skid_mpd: z.number(),
 });
 
 // Default costs from summary metadata
@@ -82,7 +80,7 @@ const CategoryBreakdownSchema = z.object({
 const CountySummarySchema = z.record(
   z.string(), // Year key
   z.record(
-    z.string(), // Category key
+    z.string(), // Category key (e.g., "Road Reconstruction", "Structural Overlay")
     CategoryBreakdownSchema
   )
 );
@@ -95,30 +93,24 @@ export const SummaryFileDataSchema = z.object({
 
 // ============= SIMPLIFIED SUMMARY FOR UI =============
 
-// This is what we store in state - a simplified version
 export const SummaryDataSchema = z.object({
   totalSegments: z.number(),
   totalLength: z.number(),
   totalCost: z.number(),
   localAuthorities: z.array(z.string()),
   lastUpdated: z.string(),
-  // Optional rich data from file
   metadata: SummaryMetadataSchema.optional(),
   countyBreakdown: z.record(z.string(), CountySummarySchema).optional(),
 });
 
 // ============= TYPE EXPORTS =============
 
-// Export inferred types from schemas
 export type ValidatedRoadSegment = z.infer<typeof RoadSegmentDataSchema>;
 export type ValidatedSummaryFile = z.infer<typeof SummaryFileDataSchema>;
 export type ValidatedSummaryData = z.infer<typeof SummaryDataSchema>;
 
 // ============= VALIDATION HELPERS =============
 
-/**
- * Validate a single segment
- */
 export function validateSegment(data: unknown): ValidatedRoadSegment | null {
   try {
     return RoadSegmentDataSchema.parse(data);
@@ -128,9 +120,6 @@ export function validateSegment(data: unknown): ValidatedRoadSegment | null {
   }
 }
 
-/**
- * Validate full dataset with error reporting
- */
 export function validateDataset(data: unknown): {
   valid: ValidatedRoadSegment[];
   invalid: number[];
@@ -154,7 +143,6 @@ export function validateDataset(data: unknown): {
     } catch (error) {
       result.invalid.push(index);
       if (error instanceof z.ZodError) {
-        // Fixed: Use 'issues' instead of 'errors'
         result.errors.push(`Segment ${index}: ${error.issues[0].message}`);
       }
     }
@@ -163,16 +151,12 @@ export function validateDataset(data: unknown): {
   return result;
 }
 
-/**
- * Extract and validate summary from file
- */
 export function validateSummaryFile(data: unknown): ValidatedSummaryFile | null {
   try {
     return SummaryFileDataSchema.parse(data);
   } catch (error) {
     console.error('Invalid summary file structure:', error);
     if (error instanceof z.ZodError) {
-      // Fixed: Use 'issues' instead of 'errors'
       console.error('Validation errors:', error.issues);
     }
     return null;
