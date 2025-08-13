@@ -37,21 +37,21 @@ export interface SummaryMetadata {
   localAuthorities: string[];
   surveyYears: string[];
   defaultParameters: {
-    roadReconstruction_iri: number;
-    roadReconstruction_rut: number;
-    roadReconstruction_psci: number;
-    structuralOverlay_iri: number;
-    structuralOverlay_rut: number;
-    structuralOverlay_psci: number;
-    surfaceRestoration_psci_a: number;
-    surfaceRestoration_psci_b: number;
-    surfaceRestoration_iri: number;
-    surfaceRestoration_psci_c: number;
-    restorationOfSkidResistance_psci_a: number;
-    restorationOfSkidResistance_psci_b: number;
-    restorationOfSkidResistance_csc: number;
-    restorationOfSkidResistance_psci_c: number;
-    restorationOfSkidResistance_mpd: number;
+    reconstruction_iri: number;
+    reconstruction_rut: number;
+    reconstruction_psci: number;
+    overlay_iri: number;
+    overlay_rut: number;
+    overlay_psci: number;
+    restoration_psci_lower: number;
+    restoration_psci_upper: number;
+    restoration_iri: number;
+    restoration_psci_both: number;
+    skid_psci_lower: number;
+    skid_psci_upper: number;
+    skid_csc: number;
+    skid_psci_both: number;
+    skid_mpd: number;
   };
   defaultCosts: {
     rr: number;  // Road Reconstruction
