@@ -5,12 +5,12 @@ import type {
   WorkerOutput,
   WorkerProgress,
 } from '@/types/calculations';
-import type { RoadSegment } from '@/types/data';
+import type { RoadSegmentData } from '@/types/data';
 
-// Worker interface remains the same
+// Worker interface with updated types
 export interface CalculationWorkerType {
   calculate: (
-    segments: RoadSegment[],
+    segments: RoadSegmentData[],  // Updated type
     params: CalculationParams,
     progressCallback?: (progress: WorkerProgress) => void
   ) => Promise<WorkerOutput>;
@@ -50,12 +50,13 @@ export class WorkerService {
 
   private getCacheKey(params: CalculationParams): string {
     // Sorting arrays ensures key consistency
-    const sortedAuthorities = params.localAuthorities ? [...params.localAuthorities].sort() : undefined;
-    return JSON.stringify({ ...params, localAuthorities: sortedAuthorities });
+    // Note: localAuthorities actually contains county codes
+    const sortedCounties = params.localAuthorities ? [...params.localAuthorities].sort() : undefined;
+    return JSON.stringify({ ...params, localAuthorities: sortedCounties });
   }
 
   async calculate(
-    segments: RoadSegment[],
+    segments: RoadSegmentData[],  // Updated type
     params: CalculationParams,
     onProgress?: (progress: WorkerProgress) => void
   ): Promise<WorkerOutput> {
