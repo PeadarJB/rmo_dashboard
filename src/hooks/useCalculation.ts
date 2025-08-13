@@ -9,12 +9,12 @@ export const useCalculation = () => {
   const [error, setError] = useState<Error | null>(null);
   const [progress, setProgress] = useState<WorkerProgress | null>(null);
 
-  // Use nested store structure
+  // Use nested store structure with UPDATED property names
   const fullDataset = useAnalyticsStore(state => state.data.fullDataset);
   const thresholds = useAnalyticsStore(state => state.parameters.thresholds);
   const costs = useAnalyticsStore(state => state.parameters.costs);
   const selectedYear = useAnalyticsStore(state => state.parameters.selectedYear);
-  const selectedAuthorities = useAnalyticsStore(state => state.parameters.selectedAuthorities);
+  const selectedCounties = useAnalyticsStore(state => state.parameters.selectedCounties); // CHANGED
   const results = useAnalyticsStore(state => state.cache.results);
   const setCalculationResults = useAnalyticsStore(state => state.setCalculationResults);
   const clearCalculationResults = useAnalyticsStore(state => state.clearCalculationResults);
@@ -34,7 +34,8 @@ export const useCalculation = () => {
       thresholds,
       costs,
       selectedYear,
-      localAuthorities: selectedAuthorities.length > 0 ? selectedAuthorities : undefined,
+      // Note: Still called localAuthorities in params, but contains county codes
+      localAuthorities: selectedCounties.length > 0 ? selectedCounties : undefined, // CHANGED
     };
 
     try {
@@ -58,7 +59,7 @@ export const useCalculation = () => {
     } finally {
       setIsCalculating(false);
     }
-  }, [fullDataset, thresholds, costs, selectedYear, selectedAuthorities, setCalculationResults]);
+  }, [fullDataset, thresholds, costs, selectedYear, selectedCounties, setCalculationResults]); // CHANGED
 
   const abort = useCallback(() => {
     workerService.abort();
