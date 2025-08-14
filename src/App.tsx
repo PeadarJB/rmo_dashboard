@@ -7,6 +7,7 @@ import { logger } from '@/utils/logger';
 import { useEffect, useState } from 'react';
 import { KPISummary } from '@/components/common/KPISummary';
 import { ParameterCostControls } from '@/components/controls/ParameterCostControls';
+import { FilterBar } from '@/components/controls/FilterBar';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -39,26 +40,29 @@ function App() {
       }}
     >
       <Dashboard onThemeChange={handleThemeChange} isDarkMode={isDarkMode}>
-  <div style={{ 
-    display: 'grid', 
-    gridTemplateColumns: 'repeat(12, 1fr)',
-    gap: '16px',
-    padding: '24px'
-  }}>
-    <div style={{ gridColumn: 'span 12' }}>
-      <KPISummary />
-    </div>
-    <div style={{ gridColumn: 'span 4' }}>
-      <ParameterCostControls />
-    </div>
-    <div style={{ gridColumn: 'span 4' }}>
-      <DataLoaderTest />
-    </div>
-    <div style={{ gridColumn: 'span 4' }}>
-      <CalculationTest />
-    </div>
-  </div>
-</Dashboard>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(12, 1fr)',
+          gap: '16px',
+          padding: '24px'
+        }}>
+          <div style={{ gridColumn: 'span 12' }}>
+            <KPISummary />
+          </div>
+          <div style={{ gridColumn: 'span 3' }}>
+            <ParameterCostControls />
+          </div>
+          <div style={{ gridColumn: 'span 3' }}>
+            <FilterBar />
+          </div>
+          <div style={{ gridColumn: 'span 3' }}>
+            <DataLoaderTest />
+          </div>
+          <div style={{ gridColumn: 'span 3' }}>
+            <CalculationTest />
+          </div>
+        </div>
+      </Dashboard>
     </ConfigProvider>
   );
 }

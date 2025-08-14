@@ -1,0 +1,62 @@
+/* src/components/controls/FilterChips.module.css */
+
+.chipsContainer {
+  padding: 8px 0;
+}
+
+.yearChip {
+  font-weight: 500;
+}
+
+.countyChip {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overflowChip {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px dashed rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+.overflowChip:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.clearButton {
+  margin-left: 8px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.clearButton:hover {
+  color: #ff4d4f;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .overflowChip {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+  
+  .overflowChip:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+  
+  .clearButton {
+    color: rgba(255, 255, 255, 0.45);
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .chipsContainer {
+    padding: 4px 0;
+  }
+  
+  .countyChip {
+    max-width: 100px;
+  }
+}

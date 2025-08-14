@@ -1,0 +1,131 @@
+/* src/components/controls/FilterBar.module.css */
+
+.filterBar {
+  height: 100%;
+}
+
+.filterContent {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.filterSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filterLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.countBadge {
+  margin-left: 8px;
+}
+
+/* Year Selector */
+.yearSelector {
+  width: 100%;
+}
+
+.yearSelector :global(.ant-radio-button-wrapper) {
+  flex: 1;
+  text-align: center;
+}
+
+/* County Selector */
+.countySelect {
+  width: 100%;
+}
+
+.dropdownActions {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.countyOption {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.countyName {
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.countyCode {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+}
+
+/* Quick Filters */
+.quickFilters {
+  margin-top: 8px;
+}
+
+/* Mobile Styles */
+.mobileFilterBar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
+  padding: 12px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.mobileFilterButton {
+  width: 100%;
+  position: relative;
+}
+
+.mobileBadge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+}
+
+.mobileDrawer :global(.ant-drawer-body) {
+  padding-top: 0;
+}
+
+.filterCount {
+  margin-left: 8px;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .filterLabel {
+    color: rgba(255, 255, 255, 0.65);
+  }
+  
+  .countyName {
+    color: rgba(255, 255, 255, 0.85);
+  }
+  
+  .countyCode {
+    color: rgba(255, 255, 255, 0.45);
+  }
+  
+  .dropdownActions {
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+  }
+  
+  .mobileFilterBar {
+    background: #141414;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .filterContent {
+    gap: 16px;
+  }
+}
