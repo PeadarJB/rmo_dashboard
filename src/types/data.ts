@@ -46,11 +46,9 @@ export interface SummaryMetadata {
     restoration_psci_lower: number;
     restoration_psci_upper: number;
     restoration_iri: number;
-    restoration_psci_both: number;
     skid_psci_lower: number;
     skid_psci_upper: number;
     skid_csc: number;
-    skid_psci_both: number;
     skid_mpd: number;
   };
   defaultCosts: {
