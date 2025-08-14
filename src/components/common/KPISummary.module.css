@@ -1,0 +1,53 @@
+/* src/components/common/KPISummary.module.css */
+
+.kpiContainer {
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+/* Ensure cards have equal height within row */
+.kpiContainer :global(.ant-row) {
+  align-items: stretch;
+}
+
+.kpiContainer :global(.ant-col) {
+  display: flex;
+}
+
+.kpiContainer :global(.ant-col > div) {
+  width: 100%;
+}
+
+/* Loading state animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.loading {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.06) 25%,
+    rgba(0, 0, 0, 0.15) 50%,
+    rgba(0, 0, 0, 0.06) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .kpiContainer {
+    margin-bottom: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .kpiContainer {
+    margin-bottom: 12px;
+  }
+}
