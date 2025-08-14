@@ -5,6 +5,7 @@ import { CalculationTest } from './components/CalculationTest';
 import { Space, ConfigProvider, theme } from 'antd';
 import { logger } from '@/utils/logger';
 import { useEffect, useState } from 'react';
+import { KPISummary } from '@/components/common/KPISummary';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -37,6 +38,7 @@ function App() {
       }}
     >
       <Dashboard onThemeChange={handleThemeChange} isDarkMode={isDarkMode}>
+        <KPISummary />
         <Space direction="vertical" style={{ width: '100%' }} size="large">
           <DataLoaderTest />
           <CalculationTest />
