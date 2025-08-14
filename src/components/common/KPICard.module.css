@@ -1,0 +1,226 @@
+/* src/components/common/KPICard.module.css */
+
+.kpiCard {
+  height: 100%;
+  min-height: 120px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpiCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #1890ff 0%, #52c41a 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.kpiCard:hover::before {
+  opacity: 1;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.title {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.45);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.infoIcon {
+  color: rgba(0, 0, 0, 0.25);
+  cursor: help;
+  transition: color 0.3s;
+}
+
+.infoIcon:hover {
+  color: #1890ff;
+}
+
+/* Content */
+.content {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.value {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  width: 100%;
+}
+
+.number {
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.prefix,
+.suffix {
+  font-size: 16px;
+  color: rgba(0, 0, 0, 0.45);
+  font-weight: 400;
+}
+
+.animating {
+  animation: pulse 0.3s ease;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.loadingIcon {
+  font-size: 24px;
+  color: #1890ff;
+}
+
+/* Trend */
+.trend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.trendUp,
+.trendDown {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.trendUp {
+  color: #52c41a;
+}
+
+.trendDown {
+  color: #ff4d4f;
+}
+
+.trendValue {
+  font-weight: 600;
+}
+
+.trendLabel {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+/* Color variants */
+.default .number {
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.success .number {
+  color: #52c41a;
+}
+
+.warning .number {
+  color: #faad14;
+}
+
+.error .number {
+  color: #ff4d4f;
+}
+
+/* Size variants */
+.small .number {
+  font-size: 24px;
+}
+
+.small .prefix,
+.small .suffix {
+  font-size: 14px;
+}
+
+.medium .number {
+  font-size: 32px;
+}
+
+.large .number {
+  font-size: 40px;
+}
+
+.large .prefix,
+.large .suffix {
+  font-size: 20px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .title {
+    color: rgba(255, 255, 255, 0.45);
+  }
+  
+  .number {
+    color: rgba(255, 255, 255, 0.85);
+  }
+  
+  .prefix,
+  .suffix,
+  .trendLabel {
+    color: rgba(255, 255, 255, 0.45);
+  }
+  
+  .infoIcon {
+    color: rgba(255, 255, 255, 0.25);
+  }
+  
+  .trend {
+    border-top-color: rgba(255, 255, 255, 0.12);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .kpiCard {
+    min-height: 100px;
+  }
+  
+  .number {
+    font-size: 28px;
+  }
+  
+  .small .number {
+    font-size: 20px;
+  }
+  
+  .large .number {
+    font-size: 36px;
+  }
+}
