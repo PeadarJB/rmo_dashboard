@@ -3,15 +3,23 @@ import React, { useEffect, useState } from 'react';
 import { Layout, Grid, theme } from 'antd';
 import { useComponentLogger, usePerformanceTimer } from '@/utils/logger';
 import styles from './Dashboard.module.css';
+import { Header } from './Header'; // <-- keeps your custom Header component
 
-const { Header, Content, Sider } = Layout;
+// Don't destructure Layout.Header to avoid a name clash with our custom Header
+const { Content, Sider } = Layout;
 const { useBreakpoint } = Grid;
 
 interface DashboardProps {
   children?: React.ReactNode;
+  onThemeChange?: (isDark: boolean) => void;
+  isDarkMode?: boolean;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ children }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ 
+  children, 
+  onThemeChange,
+  isDarkMode = false 
+}) => {
   const logger = useComponentLogger('Dashboard');
   const perfTimer = usePerformanceTimer('Dashboard.render');
   const screens = useBreakpoint();
@@ -52,9 +60,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ children }) => {
   if (isMobile) {
     return (
       <Layout className={styles.mobileLayout}>
-        <Header className={styles.mobileHeader}>
-          <div className={styles.logo}>RMO Dashboard</div>
-        </Header>
+        <Layout.Header className={styles.mobileHeader} style={{ padding: 0 }}>
+          <Header 
+            onThemeChange={onThemeChange}
+            isDarkMode={isDarkMode}
+            showMenuButton={true}
+            onMenuClick={() => logger.action('mobileMenuToggle')}
+          />
+        </Layout.Header>
         <Content className={styles.mobileContent}>
           <div className={styles.mobileContainer}>
             {children || (
@@ -92,12 +105,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ children }) => {
       </Sider>
       
       <Layout>
-        <Header className={styles.header} style={{ background: token.colorBgContainer }}>
-          <div className={styles.headerContent}>
-            <h1>Regional Road Analytics</h1>
-            {/* User menu and actions will go here */}
-          </div>
-        </Header>
+        <Layout.Header className={styles.header} style={{ background: token.colorBgContainer, padding: 0 }}>
+          <Header 
+            onThemeChange={onThemeChange}
+            isDarkMode={isDarkMode}
+            showMenuButton={collapsed}
+            onMenuClick={() => handleCollapse(!collapsed)}
+          />
+        </Layout.Header>
         
         <Content className={styles.content}>
           <div 
