@@ -5,9 +5,12 @@ import { CalculationTest } from './components/CalculationTest';
 import { ConfigProvider, theme } from 'antd';
 import { logger } from '@/utils/logger';
 import { useEffect, useState } from 'react';
-import { KPISummary } from '@/components/common/KPISummary';
-import { ParameterCostControls } from '@/components/controls/ParameterCostControls';
-import { FilterBar } from '@/components/controls/FilterBar';
+import styles from '@/components/layout/Dashboard.module.css';
+// Import your new control components
+import {
+  ParameterCostControls,
+  FilterBar,
+} from './components/controls';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -21,7 +24,7 @@ function App() {
       userAgent: navigator.userAgent,
       theme: isDarkMode ? 'dark' : 'light',
     });
-  }, []);
+  }, [isDarkMode]);
 
   const handleThemeChange = (dark: boolean) => {
     setIsDarkMode(dark);
@@ -40,27 +43,25 @@ function App() {
       }}
     >
       <Dashboard onThemeChange={handleThemeChange} isDarkMode={isDarkMode}>
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(12, 1fr)',
-          gap: '16px',
-          padding: '24px'
-        }}>
-          <div style={{ gridColumn: 'span 12' }}>
-            <KPISummary />
+        {/* Section for future KPI cards. Full width at the top. */}
+        <div className={styles.kpiSection}>
+          <div className={styles.placeholderCard}>
+            KPI Summary Area (For components from Day 2.4)
           </div>
-          <div style={{ gridColumn: 'span 3' }}>
-            <ParameterCostControls />
-          </div>
-          <div style={{ gridColumn: 'span 3' }}>
-            <FilterBar />
-          </div>
-          <div style={{ gridColumn: 'span 3' }}>
-            <DataLoaderTest />
-          </div>
-          <div style={{ gridColumn: 'span 3' }}>
-            <CalculationTest />
-          </div>
+        </div>
+
+        {/* A dedicated column for all user controls. */}
+        <div className={styles.controlsSection}>
+          <DataLoaderTest />
+          <FilterBar />
+          <ParameterCostControls />
+        </div>
+
+        {/* The main content area for results and visualizations. */}
+        <div className={styles.mainSection}>
+          <CalculationTest />
+          {/* A placeholder for where a map or another chart could go. */}
+          <div className={styles.placeholderCard}>Future Chart/Map Panel</div>
         </div>
       </Dashboard>
     </ConfigProvider>
