@@ -1,0 +1,154 @@
+/* src/components/layout/Header.module.css */
+
+/* Desktop Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  height: 64px;
+  width: 100%;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.lastUpdate {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+}
+
+.themeToggle {
+  display: flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.userName {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+/* Mobile Header */
+.mobileHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px;
+  height: 48px;
+  width: 100%;
+}
+
+.mobileLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobileTitle {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.menuButton {
+  padding: 4px;
+}
+
+.avatar {
+  cursor: pointer;
+}
+
+/* Notifications */
+.notificationList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.notification {
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+  border-left: 3px solid #1890ff;
+}
+
+.notification h4 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.notification p {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.notification small {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .lastUpdate {
+    color: rgba(255, 255, 255, 0.45);
+  }
+  
+  .userName {
+    color: rgba(255, 255, 255, 0.85);
+  }
+  
+  .themeToggle {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  
+  .notification {
+    background: rgba(255, 255, 255, 0.04);
+  }
+  
+  .notification p {
+    color: rgba(255, 255, 255, 0.65);
+  }
+  
+  .notification small {
+    color: rgba(255, 255, 255, 0.45);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header {
+    padding: 0 16px;
+  }
+  
+  .title {
+    font-size: 16px;
+  }
+  
+  .lastUpdate {
+    display: none;
+  }
+}
+
+@media (max-width: 576px) {
+  .userName {
+    display: none;
+  }
+}
