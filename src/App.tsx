@@ -2,10 +2,11 @@ import './App.css';
 import { Dashboard } from '@/components/layout/Dashboard';
 import { DataLoaderTest } from './components/DataLoaderTest';
 import { CalculationTest } from './components/CalculationTest';
-import { Space, ConfigProvider, theme } from 'antd';
+import { ConfigProvider, theme } from 'antd';
 import { logger } from '@/utils/logger';
 import { useEffect, useState } from 'react';
 import { KPISummary } from '@/components/common/KPISummary';
+import { ParameterCostControls } from '@/components/controls/ParameterCostControls';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -38,12 +39,26 @@ function App() {
       }}
     >
       <Dashboard onThemeChange={handleThemeChange} isDarkMode={isDarkMode}>
-        <KPISummary />
-        <Space direction="vertical" style={{ width: '100%' }} size="large">
-          <DataLoaderTest />
-          <CalculationTest />
-        </Space>
-      </Dashboard>
+  <div style={{ 
+    display: 'grid', 
+    gridTemplateColumns: 'repeat(12, 1fr)',
+    gap: '16px',
+    padding: '24px'
+  }}>
+    <div style={{ gridColumn: 'span 12' }}>
+      <KPISummary />
+    </div>
+    <div style={{ gridColumn: 'span 4' }}>
+      <ParameterCostControls />
+    </div>
+    <div style={{ gridColumn: 'span 4' }}>
+      <DataLoaderTest />
+    </div>
+    <div style={{ gridColumn: 'span 4' }}>
+      <CalculationTest />
+    </div>
+  </div>
+</Dashboard>
     </ConfigProvider>
   );
 }

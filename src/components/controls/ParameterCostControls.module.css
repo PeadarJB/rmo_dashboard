@@ -1,0 +1,150 @@
+/* src/components/controls/ParameterCostControls.module.css */
+
+.controlsCard {
+  height: 100%;
+  overflow: auto;
+}
+
+.cardTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modifiedBadge {
+  margin-left: 12px;
+}
+
+.collapse {
+  border: none;
+}
+
+.panel {
+  margin-bottom: 8px;
+}
+
+/* Category Sections */
+.categorySection {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.categorySection:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.categoryTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.85);
+  margin: 0 0 16px 0;
+}
+
+/* Slider Groups */
+.sliderGroup {
+  margin-bottom: 20px;
+}
+
+.sliderHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.sliderLabel {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.infoIcon {
+  color: rgba(0, 0, 0, 0.25);
+  cursor: help;
+}
+
+.sliderInput {
+  width: 100px;
+}
+
+/* Costs Grid */
+.costsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.costItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.costLabel {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.65);
+  text-transform: capitalize;
+}
+
+.costInput {
+  width: 100%;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .categoryTitle {
+    color: rgba(255, 255, 255, 0.85);
+  }
+  
+  .sliderLabel,
+  .costLabel {
+    color: rgba(255, 255, 255, 0.65);
+  }
+  
+  .infoIcon {
+    color: rgba(255, 255, 255, 0.25);
+  }
+  
+  .categorySection {
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .costsGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .sliderInput {
+    width: 80px;
+  }
+}
+
+/* Custom Ant Design overrides */
+.controlsCard :global(.ant-collapse-header) {
+  font-weight: 500;
+}
+
+.controlsCard :global(.ant-slider) {
+  margin: 4px 6px 12px;
+}
+
+.controlsCard :global(.ant-slider-mark-text) {
+  font-size: 11px;
+}
+
+.controlsCard :global(.ant-input-number-handler-wrap) {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.controlsCard :global(.ant-input-number:hover .ant-input-number-handler-wrap),
+.controlsCard :global(.ant-input-number-focused .ant-input-number-handler-wrap) {
+  opacity: 1;
+}
