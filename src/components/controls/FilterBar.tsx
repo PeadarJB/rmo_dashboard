@@ -79,9 +79,9 @@ export const FilterBar: React.FC = () => {
   
   // Get available counties from data
   const availableCounties = useMemo(() => {
-    if (!summaryData?.localAuthorities) return [];
-    return summaryData.localAuthorities.sort();
-  }, [summaryData]);
+  if (!summaryData?.localAuthorities) return [];
+  return [...summaryData.localAuthorities].sort(); // Create a copy with spread operator
+}, [summaryData]);
 
   useEffect(() => {
     logger.mount({ 
