@@ -6,11 +6,12 @@ import { ConfigProvider, theme } from 'antd';
 import { logger } from '@/utils/logger';
 import { useEffect, useState } from 'react';
 import styles from '@/components/layout/Dashboard.module.css';
-// Import your new control components
-import {
-  ParameterCostControls,
-  FilterBar,
-} from './components/controls';
+
+// Import all the new components
+import { KPISummary } from '@/components/common/KPISummary';
+import { ParameterCostControls } from '@/components/controls/ParameterCostControls';
+import { FilterBar } from '@/components/controls/FilterBar';
+import { MaintenanceCategoryChart } from '@/components/charts/MaintenanceCategoryChart';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -43,25 +44,33 @@ function App() {
       }}
     >
       <Dashboard onThemeChange={handleThemeChange} isDarkMode={isDarkMode}>
-        {/* Section for future KPI cards. Full width at the top. */}
+        {/* KPI Summary - Full width at the top */}
         <div className={styles.kpiSection}>
-          <div className={styles.placeholderCard}>
-            KPI Summary Area (For components from Day 2.4)
-          </div>
+          <KPISummary />
         </div>
 
-        
-
-        
+        {/* Controls Section - Left sidebar */}
         <div className={styles.controlsSection}>
           <ParameterCostControls />
           <FilterBar />
         </div>
+
+        {/* Main Visualization Section - Right side main area */}
         <div className={styles.mainSection}>
-          <DataLoaderTest />
+          <MaintenanceCategoryChart 
+            showComparison={true}
+            onCategoryClick={(category) => {
+              logger.userAction('categoryDrillDown', { category });
+              console.log('Category clicked:', category);
+            }}
+          />
           <CalculationTest />
         </div>
 
+        {/* Table Section - Full width at bottom (for future use) */}
+        <div className={styles.tableSection}>
+          <DataLoaderTest />
+        </div>
       </Dashboard>
     </ConfigProvider>
   );

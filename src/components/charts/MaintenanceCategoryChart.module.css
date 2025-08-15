@@ -1,0 +1,111 @@
+/* src/components/charts/MaintenanceCategoryChart.module.css */
+
+.chartCard {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chartHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.chartTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.loadingContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.chartContainer {
+  position: relative;
+  width: 100%;
+  padding: 8px;
+}
+
+/* Mobile Legend */
+.mobileLegend {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 0 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  margin-top: 16px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.legendColor {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .mobileLegend {
+    display: flex;
+  }
+  
+  .chartTitle {
+    font-size: 14px;
+  }
+  
+  .chartContainer {
+    padding: 4px;
+  }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .legendItem {
+    color: rgba(255, 255, 255, 0.65);
+  }
+  
+  .mobileLegend {
+    border-top-color: rgba(255, 255, 255, 0.12);
+  }
+}
+
+/* Animations */
+.chartCard {
+  transition: box-shadow 0.3s ease;
+}
+
+.chartCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Fullscreen mode */
+.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  background: white;
+  border-radius: 0;
+}
+
+.fullscreen .chartContainer {
+  height: calc(100vh - 120px) !important;
+}

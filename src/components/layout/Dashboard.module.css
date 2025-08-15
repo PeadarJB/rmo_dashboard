@@ -62,17 +62,22 @@
 }
 
 .controlsSection {
-  grid-column: span 3;
+  grid-column: span 4;  /* Changed from span 3 to give more room */
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
 .mainSection {
-  grid-column: span 9;
+  grid-column: span 8;  /* Changed from span 9 to match */
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+}
+
+/* Add specific height for charts in main section */
+.mainSection > * {
+  min-height: 400px;
 }
 
 .tableSection {
@@ -143,14 +148,19 @@
   }
 }
 
+/* Tablet adjustments */
 @media (max-width: 992px) and (min-width: 769px) {
-  /* Tablet adjustments */
   .controlsSection {
-    grid-column: span 8;
+    grid-column: span 12;  /* Full width on tablet */
+    flex-direction: row;    /* Side by side */
+  }
+  
+  .controlsSection > * {
+    flex: 1;
   }
   
   .mainSection {
-    grid-column: span 8;
+    grid-column: span 12;
     grid-template-columns: 1fr;
   }
 }
