@@ -53,14 +53,14 @@ function App() {
         
 
         
-  <div className={styles.controlsSection}>
-    <ParameterCostControls />
-    <FilterBar />
-  </div>
-  <div className={styles.mainSection}>
-    <DataLoaderTest />
-    <CalculationTest />
-  </div>
+        <div className={styles.controlsSection}>
+          <ParameterCostControls />
+          <FilterBar />
+        </div>
+        <div className={styles.mainSection}>
+          <DataLoaderTest />
+          <CalculationTest />
+        </div>
 
       </Dashboard>
     </ConfigProvider>
