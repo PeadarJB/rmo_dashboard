@@ -324,6 +324,17 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
     );
   }
 
+  const getTotalCost = (): number => {
+    if (!chartData || !chartData.datasets[0].data) return 0;
+    const data = chartData.datasets[0].data;
+    return data.reduce((sum: number, value: any) => {
+      if (typeof value === 'number') {
+        return sum + value;
+      }
+      return sum;
+    }, 0);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -429,16 +440,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
             <div className={styles.statItem}>
               <span className={styles.statLabel}>Total cost:</span>
               <span className={styles.statValue}>
-                €{(() => {
-                  const data = chartData.datasets[0].data;
-                  if (!data) return '0.0';
-                  // Ensure we're working with numbers, not arrays
-                  const sum = data.reduce((acc: number, val: any) => {
-                    const numVal = typeof val === 'number' ? val : 0;
-                    return acc + numVal;
-                  }, 0);
-                  return sum.toFixed(1);
-                })()}M
+                €{getTotalCost().toFixed(1)}M
               </span>
             </div>
           </div>
