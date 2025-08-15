@@ -1,28 +1,29 @@
+// FILE: vite.config.ts
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { VitePWA } from 'vite-plugin-pwa';
+// import { VitePWA } from 'vite-plugin-pwa'; // Temporarily disabled
 import * as path from 'path';
 
 export default defineConfig({
   plugins: [
     react(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
-        maximumFileSizeToCacheInBytes: 50 * 1024 * 1024, // 50MB for large JSON
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/api\./,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              networkTimeoutSeconds: 10,
-            },
-          },
-        ],
-      },
-    }),
+    // VitePWA({ // Temporarily disabled
+    //   registerType: 'autoUpdate',
+    //   workbox: {
+    //     globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
+    //     maximumFileSizeToCacheInBytes: 50 * 1024 * 1024, // 50MB for large JSON
+    //     runtimeCaching: [
+    //       {
+    //         urlPattern: /^https:\/\/api\./,
+    //         handler: 'NetworkFirst',
+    //         options: {
+    //           cacheName: 'api-cache',
+    //           networkTimeoutSeconds: 10,
+    //         },
+    //       },
+    //     ],
+    //   },
+    // }),
   ],
   resolve: {
     alias: {
