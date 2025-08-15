@@ -117,13 +117,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <Content className={styles.content}>
           <div 
             className={styles.dashboardGrid}
-            style={{
-              gridTemplateColumns: screens.xl 
-                ? 'repeat(12, 1fr)' 
-                : screens.lg 
-                ? 'repeat(8, 1fr)'
-                : 'repeat(4, 1fr)',
-            }}
           >
             {children || (
               <>

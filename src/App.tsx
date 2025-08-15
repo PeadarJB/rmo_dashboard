@@ -50,19 +50,18 @@ function App() {
           </div>
         </div>
 
-        {/* A dedicated column for all user controls. */}
-        <div className={styles.controlsSection}>
-          <DataLoaderTest />
-          <FilterBar />
-          <ParameterCostControls />
-        </div>
+        
 
-        {/* The main content area for results and visualizations. */}
-        <div className={styles.mainSection}>
-          <CalculationTest />
-          {/* A placeholder for where a map or another chart could go. */}
-          <div className={styles.placeholderCard}>Future Chart/Map Panel</div>
-        </div>
+        
+  <div className={styles.controlsSection}>
+    <ParameterCostControls />
+    <FilterBar />
+  </div>
+  <div className={styles.mainSection}>
+    <DataLoaderTest />
+    <CalculationTest />
+  </div>
+
       </Dashboard>
     </ConfigProvider>
   );
