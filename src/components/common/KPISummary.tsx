@@ -24,8 +24,8 @@ export const KPISummary: React.FC = () => {
 
     // Total Cost (from calculation if available, otherwise from summary)
     const totalCost = calculationResults.summary?.['2018']?.total_cost || 
-                     summaryData?.totalCost || 
-                     0;
+                   summaryData?.totalCost || 
+                   0;
 
     // Network Length (in km)
     const networkLength = summaryData?.totalLength 
