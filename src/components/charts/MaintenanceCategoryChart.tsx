@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Card, Button, Space, Empty, Spin, Segmented, Tooltip as AntTooltip } from 'antd';
 import {
   BarChartOutlined,
-  LineChartOutlined,
   PercentageOutlined,
   DownloadOutlined,
   FullscreenOutlined,
@@ -216,7 +215,7 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
         },
       },
     },
-    onClick: (event, elements) => {
+    onClick: (_event, elements) => {
       if (elements.length > 0 && onCategoryClick) {
         const index = elements[0].index;
         const categories: MaintenanceCategory[] = [
