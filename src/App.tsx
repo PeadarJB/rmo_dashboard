@@ -12,12 +12,20 @@ import { KPISummary } from '@/components/common/KPISummary';
 import { ParameterCostControls } from '@/components/controls/ParameterCostControls';
 import { FilterBar } from '@/components/controls/FilterBar';
 import { MaintenanceCategoryChart } from '@/components/charts/MaintenanceCategoryChart';
+import { CategoryBreakdownChart } from '@/components/charts/CategoryBreakdownChart';
+import type { MaintenanceCategory } from '@/types/calculations';
+
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('theme');
     return saved === 'dark';
   });
+
+  // Add state for drill-down
+  const [selectedCategory, setSelectedCategory] = useState<MaintenanceCategory | null>(null);
+  const [showDrillDown, setShowDrillDown] = useState(false);
+
 
   useEffect(() => {
     logger.info('App', 'RMO Dashboard initialized', {
@@ -57,13 +65,28 @@ function App() {
 
         {/* Main Visualization Section - Right side main area */}
         <div className={styles.mainSection}>
-          <MaintenanceCategoryChart 
-            showComparison={true}
-            onCategoryClick={(category) => {
-              logger.userAction('categoryDrillDown', { category });
-              console.log('Category clicked:', category);
-            }}
-          />
+          {showDrillDown ? (
+            <CategoryBreakdownChart
+              category={selectedCategory || undefined}
+              onBack={() => {
+                setShowDrillDown(false);
+                setSelectedCategory(null);
+              }}
+              onCountyClick={(county) => {
+                logger.userAction('countyDrillDown', { county });
+                console.log('County clicked:', county);
+              }}
+            />
+          ) : (
+            <MaintenanceCategoryChart 
+              showComparison={true}
+              onCategoryClick={(category) => {
+                logger.userAction('categoryDrillDown', { category });
+                setSelectedCategory(category);
+                setShowDrillDown(true);
+              }}
+            />
+          )}
           <CalculationTest />
         </div>
 

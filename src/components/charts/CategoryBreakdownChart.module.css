@@ -1,0 +1,94 @@
+/* src/components/charts/CategoryBreakdownChart.module.css */
+
+.chartCard {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chartHeader {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.loadingContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.chartContainer {
+  position: relative;
+  width: 100%;
+  padding: 8px;
+  overflow-y: auto;
+}
+
+/* Summary Stats */
+.summaryStats {
+  display: flex;
+  gap: 24px;
+  padding: 16px 0 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  margin-top: 16px;
+}
+
+.statItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.statLabel {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.statValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .chartContainer {
+    padding: 4px;
+  }
+  
+  .summaryStats {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  /* Hide extra buttons on mobile */
+  .chartCard :global(.ant-card-extra) :global(.ant-space) > *:nth-child(n+4) {
+    display: none;
+  }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .summaryStats {
+    border-top-color: rgba(255, 255, 255, 0.12);
+  }
+  
+  .statLabel {
+    color: rgba(255, 255, 255, 0.45);
+  }
+  
+  .statValue {
+    color: rgba(255, 255, 255, 0.85);
+  }
+}
+
+/* Animations */
+.chartCard {
+  transition: box-shadow 0.3s ease;
+}
+
+.chartCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
