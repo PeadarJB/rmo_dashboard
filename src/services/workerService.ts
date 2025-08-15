@@ -1,3 +1,4 @@
+// FILE: src/services/workerService.ts
 // src/services/workerService.ts
 import * as Comlink from 'comlink';
 import type {
@@ -6,11 +7,12 @@ import type {
   WorkerProgress,
 } from '@/types/calculations';
 import type { RoadSegmentData } from '@/types/data';
+import CalculationWorker from '../workers/calculation.worker?worker&inline';
 
 // Worker interface with updated types
 export interface CalculationWorkerType {
   calculate: (
-    segments: RoadSegmentData[],  // Updated type
+    segments: RoadSegmentData[],
     params: CalculationParams,
     progressCallback?: (progress: WorkerProgress) => void
   ) => Promise<WorkerOutput>;
@@ -29,10 +31,8 @@ export class WorkerService {
 
   async initialize(): Promise<void> {
     try {
-      this.worker = new Worker(
-        new URL('../workers/calculation.worker.ts', import.meta.url),
-        { type: 'module' }
-      );
+      // Vite's '?worker&inline' import gives us a constructor to instantiate.
+      this.worker = new CalculationWorker();
       this.workerProxy = Comlink.wrap<CalculationWorkerType>(this.worker);
 
       const response = await this.workerProxy.ping();
@@ -56,7 +56,7 @@ export class WorkerService {
   }
 
   async calculate(
-    segments: RoadSegmentData[],  // Updated type
+    segments: RoadSegmentData[],
     params: CalculationParams,
     onProgress?: (progress: WorkerProgress) => void
   ): Promise<WorkerOutput> {
