@@ -14,7 +14,7 @@ import { FilterBar } from '@/components/controls/FilterBar';
 import { MaintenanceCategoryChart } from '@/components/charts/MaintenanceCategoryChart';
 import { CategoryBreakdownChart } from '@/components/charts/CategoryBreakdownChart';
 import type { MaintenanceCategory } from '@/types/calculations';
-
+import { AuthWrapper } from './components/auth'; // <-- Import the new wrapper
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -25,7 +25,6 @@ function App() {
   // Add state for drill-down
   const [selectedCategory, setSelectedCategory] = useState<MaintenanceCategory | null>(null);
   const [showDrillDown, setShowDrillDown] = useState(false);
-
 
   useEffect(() => {
     logger.info('App', 'RMO Dashboard initialized', {
@@ -51,50 +50,53 @@ function App() {
         },
       }}
     >
-      <Dashboard onThemeChange={handleThemeChange} isDarkMode={isDarkMode}>
-        {/* KPI Summary - Full width at the top */}
-        <div className={styles.kpiSection}>
-          <KPISummary />
-        </div>
+      {/* Wrap the entire dashboard in the AuthWrapper */}
+      <AuthWrapper>
+        <Dashboard onThemeChange={handleThemeChange} isDarkMode={isDarkMode}>
+          {/* KPI Summary - Full width at the top */}
+          <div className={styles.kpiSection}>
+            <KPISummary />
+          </div>
 
-        {/* Controls Section - Left sidebar */}
-        <div className={styles.controlsSection}>
-          <ParameterCostControls />
-          <FilterBar />
-        </div>
+          {/* Controls Section - Left sidebar */}
+          <div className={styles.controlsSection}>
+            <ParameterCostControls />
+            <FilterBar />
+          </div>
 
-        {/* Main Visualization Section - Right side main area */}
-        <div className={styles.mainSection}>
-          {showDrillDown ? (
-            <CategoryBreakdownChart
-              category={selectedCategory || undefined}
-              onBack={() => {
-                setShowDrillDown(false);
-                setSelectedCategory(null);
-              }}
-              onCountyClick={(county) => {
-                logger.userAction('countyDrillDown', { county });
-                console.log('County clicked:', county);
-              }}
-            />
-          ) : (
-            <MaintenanceCategoryChart 
-              showComparison={true}
-              onCategoryClick={(category) => {
-                logger.userAction('categoryDrillDown', { category });
-                setSelectedCategory(category);
-                setShowDrillDown(true);
-              }}
-            />
-          )}
-          <CalculationTest />
-        </div>
+          {/* Main Visualization Section - Right side main area */}
+          <div className={styles.mainSection}>
+            {showDrillDown ? (
+              <CategoryBreakdownChart
+                category={selectedCategory || undefined}
+                onBack={() => {
+                  setShowDrillDown(false);
+                  setSelectedCategory(null);
+                }}
+                onCountyClick={(county) => {
+                  logger.userAction('countyDrillDown', { county });
+                  console.log('County clicked:', county);
+                }}
+              />
+            ) : (
+              <MaintenanceCategoryChart
+                showComparison={true}
+                onCategoryClick={(category) => {
+                  logger.userAction('categoryDrillDown', { category });
+                  setSelectedCategory(category);
+                  setShowDrillDown(true);
+                }}
+              />
+            )}
+            <CalculationTest />
+          </div>
 
-        {/* Table Section - Full width at bottom (for future use) */}
-        <div className={styles.tableSection}>
-          <DataLoaderTest />
-        </div>
-      </Dashboard>
+          {/* Table Section - Full width at bottom (for future use) */}
+          <div className={styles.tableSection}>
+            <DataLoaderTest />
+          </div>
+        </Dashboard>
+      </AuthWrapper>
     </ConfigProvider>
   );
 }

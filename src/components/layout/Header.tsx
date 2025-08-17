@@ -1,4 +1,3 @@
-// src/components/layout/Header.tsx
 import React, { useState } from 'react';
 import {
   Avatar,
@@ -46,8 +45,9 @@ export const Header: React.FC<HeaderProps> = ({
   const logger = useComponentLogger('Header');
   const screens = useBreakpoint();
   const [notificationDrawer, setNotificationDrawer] = useState(false);
-  
-  // Get calculation state from store
+
+  // Get actions from the Zustand store
+  const setAuthenticated = useAnalyticsStore((state) => state.setAuthenticated);
   const isCalculating = useAnalyticsStore(state => state.ui.isLoading);
   const hasData = useAnalyticsStore(state => !!state.data.fullDataset);
   const lastCalculation = useAnalyticsStore(state => state.cache.results.timestamp);
@@ -57,6 +57,13 @@ export const Header: React.FC<HeaderProps> = ({
   const handleThemeToggle = (checked: boolean) => {
     onThemeChange?.(checked);
     logger.action('themeToggle', { isDark: checked });
+  };
+
+  // Logout handler
+  const handleLogout = () => {
+    logger.action('menuClick', { item: 'logout' });
+    // In a real app, you would call Amplify.Auth.signOut() here.
+    setAuthenticated(false);
   };
 
   const userMenuItems: MenuProps['items'] = [
@@ -86,7 +93,7 @@ export const Header: React.FC<HeaderProps> = ({
       icon: <LogoutOutlined />,
       label: 'Logout',
       danger: true,
-      onClick: () => logger.action('menuClick', { item: 'logout' }),
+      onClick: handleLogout, // <-- Connect the logout handler
     },
   ];
 
