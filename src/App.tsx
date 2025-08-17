@@ -1,7 +1,5 @@
 import './App.css';
 import { Dashboard } from '@/components/layout/Dashboard';
-import { DataLoaderTest } from './components/DataLoaderTest';
-import { CalculationTest } from './components/CalculationTest';
 import { ConfigProvider, theme } from 'antd';
 import { logger } from '@/utils/logger';
 import { useEffect, useState } from 'react';
@@ -14,7 +12,7 @@ import { FilterBar } from '@/components/controls/FilterBar';
 import { MaintenanceCategoryChart } from '@/components/charts/MaintenanceCategoryChart';
 import { CategoryBreakdownChart } from '@/components/charts/CategoryBreakdownChart';
 import type { MaintenanceCategory } from '@/types/calculations';
-import { AuthWrapper } from './components/auth'; // <-- Import the new wrapper
+import { AuthWrapper } from './components/auth';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -50,7 +48,6 @@ function App() {
         },
       }}
     >
-      {/* Wrap the entire dashboard in the AuthWrapper */}
       <AuthWrapper>
         <Dashboard onThemeChange={handleThemeChange} isDarkMode={isDarkMode}>
           {/* KPI Summary - Full width at the top */}
@@ -88,12 +85,12 @@ function App() {
                 }}
               />
             )}
-            <CalculationTest />
+            {/* The CalculationTest component is now removed */}
           </div>
 
-          {/* Table Section - Full width at bottom (for future use) */}
+          {/* The DataLoaderTest component is now removed */}
           <div className={styles.tableSection}>
-            <DataLoaderTest />
+            {/* This space is now ready for the future data table */}
           </div>
         </Dashboard>
       </AuthWrapper>
