@@ -1,13 +1,10 @@
-// src/components/layout/Dashboard.tsx
-import React, { useEffect, useState } from 'react';
-import { Layout, Grid, theme } from 'antd';
-import { useComponentLogger, usePerformanceTimer } from '@/utils/logger';
+import React, { useState } from 'react';
+import { Layout, theme } from 'antd';
 import styles from './Dashboard.module.css';
-import { Header } from './Header'; // <-- keeps your custom Header component
+import { Header } from './Header';
+import { ControlsSider } from './ControlsSider';
 
-// Don't destructure Layout.Header to avoid a name clash with our custom Header
-const { Content, Sider } = Layout;
-const { useBreakpoint } = Grid;
+const { Content } = Layout;
 
 interface DashboardProps {
   children?: React.ReactNode;
@@ -15,139 +12,48 @@ interface DashboardProps {
   isDarkMode?: boolean;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ 
-  children, 
+export const Dashboard: React.FC<DashboardProps> = ({
+  children,
   onThemeChange,
-  isDarkMode = false 
+  isDarkMode = false,
 }) => {
-  const logger = useComponentLogger('Dashboard');
-  const perfTimer = usePerformanceTimer('Dashboard.render');
-  const screens = useBreakpoint();
   const { token } = theme.useToken();
-  
-  const [collapsed, setCollapsed] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [siderVisible, setSiderVisible] = useState(true);
 
-  // Determine device type based on breakpoints
-  useEffect(() => {
-    perfTimer.start();
-    
-    // Ant Design breakpoints: xs < 576, sm < 768, md < 992, lg < 1200, xl < 1600, xxl >= 1600
-    const mobile = !screens.md; // Mobile if smaller than md (992px)
-    setIsMobile(mobile);
-    
-    if (mobile && !collapsed) {
-      setCollapsed(true); // Auto-collapse sidebar on mobile
-    }
-    
-    logger.mount({
-      breakpoints: screens,
-      isMobile: mobile,
-      collapsed,
-    });
-    
-    perfTimer.end('componentRender');
-    
-    return () => logger.unmount();
-  }, [screens]);
-
-  const handleCollapse = (value: boolean) => {
-    setCollapsed(value);
-    logger.action('toggleSidebar', { collapsed: value });
+  const toggleSider = () => {
+    setSiderVisible(!siderVisible);
   };
 
-  // Mobile layout (single column)
-  if (isMobile) {
-    return (
-      <Layout className={styles.mobileLayout}>
-        <Layout.Header className={styles.mobileHeader} style={{ padding: 0 }}>
-          <Header 
-            onThemeChange={onThemeChange}
-            isDarkMode={isDarkMode}
-            showMenuButton={true}
-            onMenuClick={() => logger.action('mobileMenuToggle')}
-          />
-        </Layout.Header>
-        <Content className={styles.mobileContent}>
-          <div className={styles.mobileContainer}>
-            {children || (
-              <>
-                <div className={styles.placeholderCard}>KPI Summary</div>
-                <div className={styles.placeholderCard}>Parameter Controls</div>
-                <div className={styles.placeholderCard}>Main Chart</div>
-                <div className={styles.placeholderCard}>Data Table</div>
-              </>
-            )}
-          </div>
-        </Content>
-      </Layout>
-    );
-  }
-
-  // Tablet and Desktop layout (responsive grid)
   return (
-    <Layout className={styles.layout}>
-      <Sider
-        collapsible
-        collapsed={collapsed}
-        onCollapse={handleCollapse}
-        breakpoint="lg"
-        collapsedWidth={screens.sm ? 80 : 0}
-        trigger={screens.sm ? undefined : null}
-        className={styles.sider}
+    // The main wrapper no longer needs to be a flex container
+    <div className={styles.appWrapper}>
+      {/* The Sider is rendered here but positioned fixed, so it doesn't affect layout */}
+      <ControlsSider isVisible={siderVisible} />
+
+      {/* The main layout's margin will adjust to make space for the sider */}
+      <Layout
+        className={styles.mainLayout}
+        style={{
+          paddingLeft: siderVisible ? '350px' : '0px',
+          transition: 'padding-left 0.3s ease-in-out',
+        }}
       >
-        <div className={styles.siderContent}>
-          <div className={styles.logo}>
-            {collapsed ? 'RMO' : 'RMO Dashboard'}
-          </div>
-          {/* Navigation items will go here */}
-        </div>
-      </Sider>
-      
-      <Layout>
-        <Layout.Header className={styles.header} style={{ background: token.colorBgContainer, padding: 0 }}>
-          <Header 
+        <Layout.Header
+          className={styles.header}
+          style={{ background: token.colorBgContainer, padding: 0 }}
+        >
+          <Header
             onThemeChange={onThemeChange}
             isDarkMode={isDarkMode}
-            showMenuButton={collapsed}
-            onMenuClick={() => handleCollapse(!collapsed)}
+            onMenuClick={toggleSider}
+            isSiderVisible={siderVisible} // Pass visibility state to the header
           />
         </Layout.Header>
-        
+
         <Content className={styles.content}>
-          <div 
-            className={styles.dashboardGrid}
-          >
-            {children || (
-              <>
-                {/* KPI Cards - full width on mobile, 3 cols on desktop */}
-                <div className={styles.kpiSection}>
-                  <div className={styles.placeholderCard}>Total Cost</div>
-                  <div className={styles.placeholderCard}>Network Length</div>
-                  <div className={styles.placeholderCard}>Condition Score</div>
-                </div>
-                
-                {/* Controls - sidebar on desktop, full width on tablet */}
-                <div className={styles.controlsSection}>
-                  <div className={styles.placeholderCard}>Parameters</div>
-                  <div className={styles.placeholderCard}>Filters</div>
-                </div>
-                
-                {/* Main visualization area */}
-                <div className={styles.mainSection}>
-                  <div className={styles.placeholderCard}>Main Chart</div>
-                  <div className={styles.placeholderCard}>Comparison Panel</div>
-                </div>
-                
-                {/* Data table - full width */}
-                <div className={styles.tableSection}>
-                  <div className={styles.placeholderCard}>Data Table</div>
-                </div>
-              </>
-            )}
-          </div>
+          <div className={styles.contentGrid}>{children}</div>
         </Content>
       </Layout>
-    </Layout>
+    </div>
   );
 };

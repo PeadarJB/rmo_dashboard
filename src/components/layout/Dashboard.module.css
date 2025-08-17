@@ -1,177 +1,51 @@
-/* src/components/layout/Dashboard.module.css */
-
-/* Desktop & Tablet Layouts */
-.layout {
+.appWrapper {
   min-height: 100vh;
+  background: #f0f2f5;
+  position: relative; /* Needed for positioning children */
+  overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
-.sider {
-  background: #001529;
-}
-
-.siderContent {
-  padding: 16px;
-}
-
-.logo {
-  height: 32px;
-  margin: 16px;
-  color: white;
-  font-weight: bold;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.mainLayout {
+  transition: padding-left 0.3s ease-in-out; /* Smooth transition for content area */
 }
 
 .header {
-  padding: 0 24px;
+  padding: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-.headerContent {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 64px;
-}
-
-.headerContent h1 {
-  margin: 0;
-  font-size: 20px;
+  z-index: 10;
 }
 
 .content {
-  margin: 24px 16px;
+  margin: 16px;
   min-height: 280px;
 }
 
-/* Grid System */
-.dashboardGrid {
+.contentGrid {
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(12, 1fr);
+  grid-template-columns: 1fr;
   grid-auto-rows: minmax(100px, auto);
 }
 
-.kpiSection {
-  grid-column: span 12;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 16px;
-}
-
-.controlsSection {
-  grid-column: span 4;  /* Changed from span 3 to give more room */
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.mainSection {
-  grid-column: span 8;  /* Changed from span 9 to match */
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-/* Add specific height for charts in main section */
-.mainSection > * {
-  min-height: 400px;
-}
-
+.kpiSection,
+.mainChartSection,
 .tableSection {
-  grid-column: span 12;
+  grid-column: span 1;
 }
 
-/* Mobile Layout */
-.mobileLayout {
-  min-height: 100vh;
-  background: #f0f2f5;
+.mainChartSection {
+  min-height: 450px;
 }
 
-.mobileHeader {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: #001529;
-  color: white;
-  padding: 0 16px;
-  display: flex;
-  align-items: center;
-  height: 48px;
-}
-
-.mobileContent {
-  padding: 16px;
-}
-
-.mobileContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* Placeholder cards for development */
-.placeholderCard {
-  background: white;
-  border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 120px;
-  color: #8c8c8c;
-  border: 2px dashed #d9d9d9;
-}
-
-/* Responsive breakpoints */
-@media (max-width: 768px) {
-  .content {
-    margin: 16px 8px;
-  }
-  
-  .dashboardGrid {
-    grid-template-columns: 1fr !important;
-  }
-  
-  .kpiSection,
-  .controlsSection,
-  .mainSection,
-  .tableSection {
-    grid-column: span 1;
-  }
-  
-  .mainSection {
-    grid-template-columns: 1fr;
+@media (prefers-color-scheme: dark) {
+  .appWrapper {
+    background: #141414;
   }
 }
 
-/* Tablet adjustments */
-@media (max-width: 992px) and (min-width: 769px) {
-  .controlsSection {
-    grid-column: span 12;  /* Full width on tablet */
-    flex-direction: row;    /* Side by side */
-  }
-  
-  .controlsSection > * {
-    flex: 1;
-  }
-  
-  .mainSection {
-    grid-column: span 12;
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 576px) {
-  /* Extra small devices */
-  .kpiSection {
-    grid-template-columns: 1fr;
-  }
-  
-  .headerContent h1 {
-    font-size: 16px;
+/* Mobile layout will be handled by hiding the desktop sider entirely */
+@media (max-width: 992px) {
+  .mainLayout {
+    padding-left: 0 !important; /* On smaller screens, content is always full-width */
   }
 }

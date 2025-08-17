@@ -1,0 +1,47 @@
+.siderContainer {
+  position: fixed; /* Lifts the sider out of the document flow */
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 350px;
+  z-index: 1000; /* Ensure it's above other content */
+  
+  /* Glassmorphism effect */
+  background-color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px); /* Safari support */
+  
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
+  
+  display: flex;
+  flex-direction: column;
+}
+
+.siderContent {
+  padding: 16px;
+  overflow-y: auto; /* Make content scrollable if it overflows */
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+}
+
+/* Hide scrollbar but keep it functional */
+.siderContent::-webkit-scrollbar {
+  width: 6px;
+}
+.siderContent::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .siderContainer {
+    background-color: rgba(20, 20, 20, 0.7);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .siderContent::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+  }
+}

@@ -5,10 +5,8 @@ import { logger } from '@/utils/logger';
 import { useEffect, useState } from 'react';
 import styles from '@/components/layout/Dashboard.module.css';
 
-// Import all the new components
 import { KPISummary } from '@/components/common/KPISummary';
-import { ParameterCostControls } from '@/components/controls/ParameterCostControls';
-import { FilterBar } from '@/components/controls/FilterBar';
+// ParameterCostControls and FilterBar are no longer directly used here
 import { MaintenanceCategoryChart } from '@/components/charts/MaintenanceCategoryChart';
 import { CategoryBreakdownChart } from '@/components/charts/CategoryBreakdownChart';
 import type { MaintenanceCategory } from '@/types/calculations';
@@ -20,7 +18,6 @@ function App() {
     return saved === 'dark';
   });
 
-  // Add state for drill-down
   const [selectedCategory, setSelectedCategory] = useState<MaintenanceCategory | null>(null);
   const [showDrillDown, setShowDrillDown] = useState(false);
 
@@ -50,19 +47,12 @@ function App() {
     >
       <AuthWrapper>
         <Dashboard onThemeChange={handleThemeChange} isDarkMode={isDarkMode}>
-          {/* KPI Summary - Full width at the top */}
+          {/* The controls section is now gone from this grid */}
           <div className={styles.kpiSection}>
             <KPISummary />
           </div>
 
-          {/* Controls Section - Left sidebar */}
-          <div className={styles.controlsSection}>
-            <ParameterCostControls />
-            <FilterBar />
-          </div>
-
-          {/* Main Visualization Section - Right side main area */}
-          <div className={styles.mainSection}>
+          <div className={styles.mainChartSection}>
             {showDrillDown ? (
               <CategoryBreakdownChart
                 category={selectedCategory || undefined}
@@ -85,12 +75,10 @@ function App() {
                 }}
               />
             )}
-            {/* The CalculationTest component is now removed */}
           </div>
 
-          {/* The DataLoaderTest component is now removed */}
           <div className={styles.tableSection}>
-            {/* This space is now ready for the future data table */}
+            {/* Ready for the data table */}
           </div>
         </Dashboard>
       </AuthWrapper>
