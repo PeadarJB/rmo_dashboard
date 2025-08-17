@@ -1,0 +1,30 @@
+.loginContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #f0f2f5;
+}
+
+.loginCard {
+  width: 100%;
+  max-width: 400px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.loginForm {
+  margin-top: 24px;
+}
+
+.loginFormButton {
+  width: 100%;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .loginContainer {
+    background-color: #141414;
+  }
+}
