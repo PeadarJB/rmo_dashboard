@@ -29,6 +29,7 @@ import { useComponentLogger } from '@/utils/logger';
 import { useAnalyticsStore } from '@/store/useAnalyticsStore';
 import { useScrollDirection } from '@/hooks'; // Import the new hook
 import styles from './Header.module.css';
+import logo from '/img/RMO_Logo.png';
 
 const { useBreakpoint } = Grid;
 
@@ -191,7 +192,8 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onMenuClick}
           />
         </Tooltip>
-        <h1 className={styles.title}>Regional Road Analytics Dashboard</h1>
+        <img src={logo} alt="RMO Logo" className={styles.logo} />
+        <h1 className={styles.title}>RMO Regional Road Survey</h1>
         {lastCalculation && (
           <span className={styles.lastUpdate}>
             Last updated: {new Date(lastCalculation).toLocaleTimeString()}

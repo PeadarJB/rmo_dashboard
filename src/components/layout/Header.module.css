@@ -16,6 +16,12 @@
   gap: 16px;
 }
 
+.logo {
+  height: 40px;
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
 .title {
   margin: 0;
   font-size: 20px;
