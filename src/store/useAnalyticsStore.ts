@@ -8,16 +8,27 @@ import type {
 } from '@/types/store';
 import type { SurveyYear } from '@/types/data';
 import { DEFAULT_THRESHOLDS, DEFAULT_COSTS } from '@/types/calculations';
+import { 
+  ChartFiltersState, 
+  ChartFiltersActions,
+  DEFAULT_CHART_FILTERS,
+  createChartFiltersActions 
+} from './slices/chartFiltersSlice';
+
+// ============= EXTENDED STATE INTERFACE =============
+export interface ExtendedAnalyticsState extends AnalyticsState, ChartFiltersActions {
+  chartFilters: ChartFiltersState;
+}
 
 // Define the initial nested state structure
-const initialState: InitialStateValues = {
+const initialState: InitialStateValues & { chartFilters: ChartFiltersState } = {
   data: {
     summaryData: null,
     fullDataset: null,
   },
   ui: {
     loadProgress: { 
-      stage: 'idle' as const,  // Enforce literal type
+      stage: 'idle' as const,
       summaryLoaded: false, 
       fullLoaded: false, 
       progress: 0 
@@ -28,8 +39,8 @@ const initialState: InitialStateValues = {
   parameters: {
     thresholds: DEFAULT_THRESHOLDS,
     costs: DEFAULT_COSTS,
-    selectedYear: '2018' as SurveyYear,  // Using SurveyYear type
-    selectedCounties: [],  // Renamed from selectedAuthorities
+    selectedYear: '2018' as SurveyYear,
+    selectedCounties: [],
   },
   cache: {
     results: {
@@ -43,25 +54,26 @@ const initialState: InitialStateValues = {
     isAuthenticated: false,
     preferences: {},
   },
+  chartFilters: DEFAULT_CHART_FILTERS,
 };
 
-export const useAnalyticsStore = create<AnalyticsState>((set) => ({
+export const useAnalyticsStore = create<ExtendedAnalyticsState>((set) => ({
   // ============= STATE =============
   ...initialState,
 
   // ============= DATA ACTIONS =============
   setSummaryData: (data) =>
-    set(produce((state: AnalyticsState) => {
+    set(produce((state: ExtendedAnalyticsState) => {
       state.data.summaryData = data;
     })),
 
   setFullDataset: (data) =>
-    set(produce((state: AnalyticsState) => {
+    set(produce((state: ExtendedAnalyticsState) => {
       state.data.fullDataset = data;
     })),
 
   clearData: () =>
-    set(produce((state: AnalyticsState) => {
+    set(produce((state: ExtendedAnalyticsState) => {
       state.data.summaryData = null;
       state.data.fullDataset = null;
       state.ui.loadError = null;
@@ -76,23 +88,23 @@ export const useAnalyticsStore = create<AnalyticsState>((set) => ({
 
   // ============= UI ACTIONS =============
   setLoadProgress: (progress) =>
-    set(produce((state: AnalyticsState) => {
+    set(produce((state: ExtendedAnalyticsState) => {
       state.ui.loadProgress = progress;
     })),
 
   setLoadError: (error) =>
-    set(produce((state: AnalyticsState) => {
+    set(produce((state: ExtendedAnalyticsState) => {
       state.ui.loadError = error;
     })),
 
   setIsLoading: (loading) =>
-    set(produce((state: AnalyticsState) => {
+    set(produce((state: ExtendedAnalyticsState) => {
       state.ui.isLoading = loading;
     })),
 
   // ============= CALCULATION ACTIONS =============
   setCalculationResults: (payload: SetCalculationResultsPayload) =>
-    set(produce((state: AnalyticsState) => {
+    set(produce((state: ExtendedAnalyticsState) => {
       state.cache.results = {
         segments: payload.segments,
         summary: payload.summary,
@@ -102,7 +114,7 @@ export const useAnalyticsStore = create<AnalyticsState>((set) => ({
     })),
 
   clearCalculationResults: () =>
-    set(produce((state: AnalyticsState) => {
+    set(produce((state: ExtendedAnalyticsState) => {
       state.cache.results = {
         segments: null,
         summary: null,
@@ -113,7 +125,7 @@ export const useAnalyticsStore = create<AnalyticsState>((set) => ({
 
   // ============= PARAMETER ACTIONS =============
   updateThresholds: (newThresholds) =>
-    set(produce((state: AnalyticsState) => {
+    set(produce((state: ExtendedAnalyticsState) => {
       // Deep merge each threshold category
       Object.keys(newThresholds).forEach((key) => {
         const thresholdKey = key as keyof typeof newThresholds;
@@ -127,22 +139,22 @@ export const useAnalyticsStore = create<AnalyticsState>((set) => ({
     })),
 
   updateCosts: (newCosts) =>
-    set(produce((state: AnalyticsState) => {
+    set(produce((state: ExtendedAnalyticsState) => {
       Object.assign(state.parameters.costs, newCosts);
     })),
 
   setSelectedYear: (year) =>
-    set(produce((state: AnalyticsState) => {
+    set(produce((state: ExtendedAnalyticsState) => {
       state.parameters.selectedYear = year;
     })),
 
-  setSelectedCounties: (counties) =>  // Renamed from setSelectedAuthorities
-    set(produce((state: AnalyticsState) => {
+  setSelectedCounties: (counties) =>
+    set(produce((state: ExtendedAnalyticsState) => {
       state.parameters.selectedCounties = counties;
     })),
 
   resetParameters: () =>
-    set(produce((state: AnalyticsState) => {
+    set(produce((state: ExtendedAnalyticsState) => {
       state.parameters = {
         thresholds: DEFAULT_THRESHOLDS,
         costs: DEFAULT_COSTS,
@@ -151,39 +163,90 @@ export const useAnalyticsStore = create<AnalyticsState>((set) => ({
       };
     })),
 
-  // ============= USER ACTIONS (placeholder) =============
+  // ============= USER ACTIONS =============
   setAuthenticated: (authenticated) =>
-    set(produce((state: AnalyticsState) => {
+    set(produce((state: ExtendedAnalyticsState) => {
       state.user.isAuthenticated = authenticated;
     })),
 
   updatePreferences: (preferences) =>
-    set(produce((state: AnalyticsState) => {
+    set(produce((state: ExtendedAnalyticsState) => {
       Object.assign(state.user.preferences, preferences);
     })),
+
+  // ============= CHART FILTER ACTIONS =============
+  ...createChartFiltersActions(set),
 }));
 
-// ============= SELECTORS (optional, for complex derived state) =============
+// ============= SELECTORS =============
 export const selectors = {
-  hasData: (state: AnalyticsState) => 
+  // Existing selectors
+  hasData: (state: ExtendedAnalyticsState) => 
     !!(state.data.summaryData || state.data.fullDataset),
   
-  isReady: (state: AnalyticsState) => 
+  isReady: (state: ExtendedAnalyticsState) => 
     !!state.data.fullDataset && !state.ui.isLoading,
   
-  totalSegments: (state: AnalyticsState) => 
+  totalSegments: (state: ExtendedAnalyticsState) => 
     state.data.fullDataset?.length ?? 0,
   
-  totalCost2018: (state: AnalyticsState) => 
+  totalCost2018: (state: ExtendedAnalyticsState) => 
     state.cache.results.summary?.['2018']?.total_cost ?? null,
   
-  // New selectors for the actual data structure
-  getSegmentById: (state: AnalyticsState, id: number) =>
+  getSegmentById: (state: ExtendedAnalyticsState, id: number) =>
     state.data.fullDataset?.find(seg => seg.id === id),
   
-  getSegmentsByCounty: (state: AnalyticsState, county: string) =>
+  getSegmentsByCounty: (state: ExtendedAnalyticsState, county: string) =>
     state.data.fullDataset?.filter(seg => seg.county === county) ?? [],
   
-  getSegmentsByRoad: (state: AnalyticsState, roadNumber: string) =>
+  getSegmentsByRoad: (state: ExtendedAnalyticsState, roadNumber: string) =>
     state.data.fullDataset?.filter(seg => seg.roadNumber === roadNumber) ?? [],
+  
+  // New chart filter selectors
+  hasActiveChartFilters: (state: ExtendedAnalyticsState) => {
+    const filters = state.chartFilters;
+    return (
+      filters.selectedCounties.length > 0 ||
+      filters.compareYear !== null ||
+      filters.showTopN !== null ||
+      filters.metric !== DEFAULT_CHART_FILTERS.metric ||
+      filters.primaryYear !== DEFAULT_CHART_FILTERS.primaryYear
+    );
+  },
+  
+  activeChartFilterCount: (state: ExtendedAnalyticsState) => {
+    const filters = state.chartFilters;
+    let count = 0;
+    if (filters.selectedCounties.length > 0) count += filters.selectedCounties.length;
+    if (filters.compareYear !== null) count++;
+    if (filters.showTopN !== null) count++;
+    if (filters.metric !== DEFAULT_CHART_FILTERS.metric) count++;
+    if (filters.primaryYear !== DEFAULT_CHART_FILTERS.primaryYear) count++;
+    return count;
+  },
+  
+  // Combined selector for chart data fetching
+  getChartData: (state: ExtendedAnalyticsState) => {
+    const { chartFilters, cache } = state;
+    
+    // Return filtered/sorted data based on chartFilters
+    if (!cache.results.segments) return null;
+    
+    let segments = [...cache.results.segments];
+    
+    // Filter by counties if specified
+    if (chartFilters.selectedCounties.length > 0) {
+      segments = segments.filter(s => 
+        chartFilters.selectedCounties.includes(s.county)
+      );
+    }
+    
+    // Return data for the selected year(s)
+    return {
+      segments,
+      primaryYear: chartFilters.primaryYear,
+      compareYear: chartFilters.compareYear,
+      metric: chartFilters.metric,
+    };
+  },
 };
