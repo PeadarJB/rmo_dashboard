@@ -19,7 +19,7 @@
 .filterLabel {
   font-size: 13px;
   font-weight: 500;
-  color: rgba(0, 0, 0, 0.65);
+  color: var(--ant-color-text-secondary);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -48,7 +48,7 @@
   display: flex;
   justify-content: space-between;
   padding: 4px 12px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid var(--ant-color-border-secondary);
 }
 
 .countyOption {
@@ -58,11 +58,11 @@
 }
 
 .countyName {
-  color: rgba(0, 0, 0, 0.85);
+  color: var(--ant-color-text);
 }
 
 .countyCode {
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--ant-color-text-tertiary);
   font-size: 12px;
 }
 
@@ -76,7 +76,7 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  background: white;
+  background: var(--ant-color-bg-container);
   padding: 12px 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
@@ -98,29 +98,6 @@
 
 .filterCount {
   margin-left: 8px;
-}
-
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  .filterLabel {
-    color: rgba(255, 255, 255, 0.65);
-  }
-  
-  .countyName {
-    color: rgba(255, 255, 255, 0.85);
-  }
-  
-  .countyCode {
-    color: rgba(255, 255, 255, 0.45);
-  }
-  
-  .dropdownActions {
-    border-bottom-color: rgba(255, 255, 255, 0.12);
-  }
-  
-  .mobileFilterBar {
-    background: #141414;
-  }
 }
 
 /* Responsive */

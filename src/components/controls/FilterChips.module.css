@@ -16,38 +16,22 @@
 }
 
 .overflowChip {
-  background: rgba(0, 0, 0, 0.04);
-  border: 1px dashed rgba(0, 0, 0, 0.25);
+  background: var(--ant-color-fill-tertiary);
+  border: 1px dashed var(--ant-color-border);
   cursor: pointer;
 }
 
 .overflowChip:hover {
-  background: rgba(0, 0, 0, 0.08);
+  background: var(--ant-color-fill-secondary);
 }
 
 .clearButton {
   margin-left: 8px;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--ant-color-text-tertiary);
 }
 
 .clearButton:hover {
-  color: #ff4d4f;
-}
-
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  .overflowChip {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.25);
-  }
-  
-  .overflowChip:hover {
-    background: rgba(255, 255, 255, 0.12);
-  }
-  
-  .clearButton {
-    color: rgba(255, 255, 255, 0.45);
-  }
+  color: var(--ant-color-error);
 }
 
 /* Mobile */
