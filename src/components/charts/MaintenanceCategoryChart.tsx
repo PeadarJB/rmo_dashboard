@@ -50,15 +50,9 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
   const { token } = theme.useToken();
 
   // Store state
-  const {
-    calculationResults,
-    chartFilters,
-    isLoading,
-  } = useAnalyticsStore(state => ({
-    calculationResults: state.cache.results,
-    chartFilters: state.chartFilters,
-    isLoading: state.ui.isLoading,
-  }));
+  const calculationResults = useAnalyticsStore(state => state.cache.results);
+  const chartFilters = useAnalyticsStore(state => state.chartFilters);
+  const isLoading = useAnalyticsStore(state => state.ui.isLoading);
 
   useEffect(() => {
     logger.mount({ 

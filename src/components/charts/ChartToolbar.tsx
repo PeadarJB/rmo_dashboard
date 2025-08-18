@@ -301,7 +301,7 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
           maxTagCount={maxTagCount}
           maxTagPlaceholder={(omitted) => `+${omitted.length} more`}
           suffixIcon={<EnvironmentOutlined />}
-          dropdownRender={renderCountyDropdown}
+          popupRender={renderCountyDropdown}
           filterOption={(input, option) => {
             const countyCode = (option?.value ?? '') as string;
             const countyName = COUNTY_NAMES[countyCode] || countyCode;
