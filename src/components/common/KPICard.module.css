@@ -15,7 +15,8 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #1890ff 0%, #52c41a 100%);
+  /* Use theme tokens for gradient instead of hard-coded colors */
+  background: linear-gradient(90deg, var(--ant-color-primary) 0%, var(--ant-color-success) 100%);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -43,20 +44,21 @@
 
 .title {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--ant-color-text-secondary);
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .infoIcon {
-  color: rgba(0, 0, 0, 0.25);
+  color: var(--ant-color-text-tertiary);
   cursor: help;
   transition: color 0.3s;
 }
 
 .infoIcon:hover {
-  color: #1890ff;
+  /* Use primary color token for hover state */
+  color: var(--ant-color-primary);
 }
 
 /* Content */
@@ -77,13 +79,13 @@
   font-size: 32px;
   font-weight: 600;
   line-height: 1.2;
-  color: rgba(0, 0, 0, 0.85);
+  color: var(--ant-color-text);
 }
 
 .prefix,
 .suffix {
   font-size: 16px;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--ant-color-text-secondary);
   font-weight: 400;
 }
 
@@ -102,7 +104,7 @@
 
 .loadingIcon {
   font-size: 24px;
-  color: #1890ff;
+  color: var(--ant-color-primary);
 }
 
 /* Trend */
@@ -112,7 +114,7 @@
   gap: 8px;
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  border-top: 1px solid var(--ant-color-border-secondary);
 }
 
 .trendUp,
@@ -125,11 +127,11 @@
 }
 
 .trendUp {
-  color: #52c41a;
+  color: var(--ant-color-success);
 }
 
 .trendDown {
-  color: #ff4d4f;
+  color: var(--ant-color-error);
 }
 
 .trendValue {
@@ -138,24 +140,24 @@
 
 .trendLabel {
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--ant-color-text-tertiary);
 }
 
 /* Color variants */
 .default .number {
-  color: rgba(0, 0, 0, 0.85);
+  color: var(--ant-color-text);
 }
 
 .success .number {
-  color: #52c41a;
+  color: var(--ant-color-success);
 }
 
 .warning .number {
-  color: #faad14;
+  color: var(--ant-color-warning);
 }
 
 .error .number {
-  color: #ff4d4f;
+  color: var(--ant-color-error);
 }
 
 /* Size variants */
@@ -179,31 +181,6 @@
 .large .prefix,
 .large .suffix {
   font-size: 20px;
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .title {
-    color: rgba(255, 255, 255, 0.45);
-  }
-  
-  .number {
-    color: rgba(255, 255, 255, 0.85);
-  }
-  
-  .prefix,
-  .suffix,
-  .trendLabel {
-    color: rgba(255, 255, 255, 0.45);
-  }
-  
-  .infoIcon {
-    color: rgba(255, 255, 255, 0.25);
-  }
-  
-  .trend {
-    border-top-color: rgba(255, 255, 255, 0.12);
-  }
 }
 
 /* Responsive */

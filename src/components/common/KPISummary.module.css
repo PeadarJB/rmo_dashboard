@@ -31,9 +31,9 @@
 .loading {
   background: linear-gradient(
     90deg,
-    rgba(0, 0, 0, 0.06) 25%,
-    rgba(0, 0, 0, 0.15) 50%,
-    rgba(0, 0, 0, 0.06) 75%
+    var(--ant-color-fill-secondary) 25%,
+    var(--ant-color-fill) 50%,
+    var(--ant-color-fill-secondary) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
