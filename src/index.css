@@ -53,3 +53,32 @@ button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
+
+/* --- Mobile Fixes & Global Guardrails --- */
+
+/* 1. Global safety: prevent horizontal overflow */
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* 2. Ensure media elements are responsive */
+img,
+canvas,
+svg,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 3. Allow flex/grid children to shrink correctly */
+.ant-space,
+.ant-row,
+.ant-col,
+.ant-card,
+.ant-card-body {
+  min-width: 0;
+}

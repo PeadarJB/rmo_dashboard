@@ -20,12 +20,14 @@ import {
   QuestionCircleOutlined,
   DownloadOutlined,
   SyncOutlined,
-  MenuUnfoldOutlined, // Correct icon for opening
-  MenuFoldOutlined,   // Correct icon for closing
+  MenuUnfoldOutlined,
+  MenuFoldOutlined,
+  MoreOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { useComponentLogger } from '@/utils/logger';
 import { useAnalyticsStore } from '@/store/useAnalyticsStore';
+import { useScrollDirection } from '@/hooks'; // Import the new hook
 import styles from './Header.module.css';
 
 const { useBreakpoint } = Grid;
@@ -34,7 +36,7 @@ interface HeaderProps {
   onThemeChange?: (isDark: boolean) => void;
   isDarkMode?: boolean;
   onMenuClick?: () => void;
-  isSiderVisible?: boolean; // New prop to control the icon
+  isSiderVisible?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -46,6 +48,7 @@ export const Header: React.FC<HeaderProps> = ({
   const logger = useComponentLogger('Header');
   const screens = useBreakpoint();
   const [notificationDrawer, setNotificationDrawer] = useState(false);
+  const scrollDir = useScrollDirection(); // Use the hook
 
   const setAuthenticated = useAnalyticsStore((state) => state.setAuthenticated);
   const isCalculating = useAnalyticsStore(state => state.ui.isLoading);
@@ -63,8 +66,7 @@ export const Header: React.FC<HeaderProps> = ({
     logger.action('menuClick', { item: 'logout' });
     setAuthenticated(false);
   };
-  
-  // ... (userMenuItems and actionMenuItems remain the same)
+
   const userMenuItems: MenuProps['items'] = [
     {
       key: 'profile',
@@ -113,14 +115,68 @@ export const Header: React.FC<HeaderProps> = ({
     },
   ];
 
-
   // Mobile header content
   if (isMobile) {
-    // Mobile implementation will be in the next step
+    const mobileMenuItems: MenuProps['items'] = [
+      ...actionMenuItems,
+      { type: 'divider' },
+      {
+        key: 'theme',
+        label: isDarkMode ? 'Light theme' : 'Dark theme',
+        icon: isDarkMode ? <SunOutlined /> : <MoonOutlined />,
+        onClick: () => onThemeChange?.(!isDarkMode)
+      },
+      {
+        key: 'notifications',
+        label: 'Notifications',
+        icon: <BellOutlined />,
+        onClick: () => setNotificationDrawer(true)
+      },
+      { type: 'divider' },
+      {
+        key: 'logout',
+        danger: true,
+        label: 'Logout',
+        icon: <LogoutOutlined />,
+        onClick: handleLogout
+      },
+    ];
+
     return (
-      <div className={styles.mobileHeader}>
-        {/* ... existing mobile header code ... */}
-      </div>
+      <>
+        <div
+          className={`${styles.mobileHeader} ${
+            scrollDir === 'down' ? styles.hidden : ''
+          }`}
+        >
+          <Button
+            type="text"
+            aria-label={isSiderVisible ? 'Hide Controls' : 'Show Controls'}
+            icon={isSiderVisible ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
+            onClick={onMenuClick}
+          />
+          <div className={styles.mobileTitle} title="Regional Road Analytics Dashboard">
+            RMO Dashboard
+          </div>
+
+          <Dropdown
+            menu={{ items: mobileMenuItems }}
+            trigger={['click']}
+          >
+            <Button type="text" aria-label="More options">
+              <MoreOutlined />
+            </Button>
+          </Dropdown>
+        </div>
+        <Drawer
+          title="Notifications"
+          placement="right"
+          onClose={() => setNotificationDrawer(false)}
+          open={notificationDrawer}
+        >
+          {/* ... existing drawer content ... */}
+        </Drawer>
+      </>
     );
   }
 
@@ -128,7 +184,6 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <div className={styles.header}>
       <div className={styles.headerLeft}>
-        {/* New Sider Toggle Button */}
         <Tooltip title={isSiderVisible ? 'Hide Controls' : 'Show Controls'}>
           <Button
             type="text"

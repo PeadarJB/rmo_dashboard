@@ -19,12 +19,25 @@
   width: 100%;
 }
 
-.chartContainer {
+/* --- UPDATED STYLES --- */
+.chartContainerWrapper {
   position: relative;
   width: 100%;
-  padding: 8px;
+  /* Set a max-height to contain the chart */
+  max-height: 500px; 
+  /* Enable vertical scrolling when content overflows */
   overflow-y: auto;
+  /* Add some padding to prevent scrollbar from overlapping labels */
+  padding-right: 10px;
 }
+
+@media (max-width: 768px) {
+  .chartContainerWrapper {
+    max-height: 350px;
+  }
+}
+/* --- END UPDATED STYLES --- */
+
 
 /* Summary Stats */
 .summaryStats {
@@ -54,16 +67,11 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .chartContainer {
-    padding: 4px;
-  }
-  
   .summaryStats {
     flex-direction: column;
     gap: 8px;
   }
   
-  /* Hide extra buttons on mobile */
   .chartCard :global(.ant-card-extra) :global(.ant-space) > *:nth-child(n+4) {
     display: none;
   }

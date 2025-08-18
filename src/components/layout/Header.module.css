@@ -45,25 +45,41 @@
   color: var(--ant-color-text);
 }
 
-/* Mobile Header */
+/* --- Mobile Header --- */
 .mobileHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 16px;
+  position: fixed; /* Changed from sticky to fixed for better control */
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
   height: 48px;
-  width: 100%;
-}
-
-.mobileLeft {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 8px;
+  padding: 0 8px;
+  
+  /* Glassmorphism Effect */
+  background-color: color-mix(in srgb, var(--ant-color-bg-container) 70%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  border-bottom: 1px solid var(--ant-color-border-secondary);
+  
+  /* Animation */
+  transition: transform 0.3s ease-in-out;
+  transform: translateY(0);
+}
+
+.mobileHeader.hidden {
+  transform: translateY(-100%);
 }
 
 .mobileTitle {
-  font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .menuButton {
