@@ -1,21 +1,23 @@
 import './App.css';
 import { Dashboard } from '@/components/layout/Dashboard';
-import { ConfigProvider, theme } from 'antd';
+import { ConfigProvider } from 'antd';
 import { logger } from '@/utils/logger';
 import { useEffect, useState } from 'react';
 import styles from '@/components/layout/Dashboard.module.css';
 
 import { KPISummary } from '@/components/common/KPISummary';
-// ParameterCostControls and FilterBar are no longer directly used here
 import { MaintenanceCategoryChart } from '@/components/charts/MaintenanceCategoryChart';
 import { CategoryBreakdownChart } from '@/components/charts/CategoryBreakdownChart';
 import type { MaintenanceCategory } from '@/types/calculations';
 import { AuthWrapper } from './components/auth';
+import { lightTheme, darkTheme } from './theme';
+import { ThemeTokenBridge } from './theme/ThemeTokenBridge';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('theme');
-    return saved === 'dark';
+    // Also check for user's system preference
+    return saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
   const [selectedCategory, setSelectedCategory] = useState<MaintenanceCategory | null>(null);
@@ -38,16 +40,16 @@ function App() {
   return (
     <ConfigProvider
       theme={{
-        algorithm: isDarkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
-        token: {
-          colorPrimary: '#1890ff',
-          borderRadius: 8,
-        },
+        ...(isDarkMode ? darkTheme : lightTheme),
+        /** Enable global CSS variables for theme tokens and disable hash scoping */
+        cssVar: true,
+        hashed: false,
       }}
     >
+      {/* Bridge component to expose design tokens as CSS variables */}
+      <ThemeTokenBridge />
       <AuthWrapper>
         <Dashboard onThemeChange={handleThemeChange} isDarkMode={isDarkMode}>
-          {/* The controls section is now gone from this grid */}
           <div className={styles.kpiSection}>
             <KPISummary />
           </div>
