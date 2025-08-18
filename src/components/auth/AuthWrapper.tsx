@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAnalyticsStore } from '@/store/useAnalyticsStore';
-import { LoginPage } from '@/pages/loginPage';
+import { LoginPage } from '@/pages/LoginPage';
 import { GlobalLoader } from '@/components/layout/GlobalLoader';
 import { useAppInitializer } from '@/hooks/useAppInitializer'; // <-- Import the new hook
 import { Alert } from 'antd';
