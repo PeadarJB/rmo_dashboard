@@ -1,4 +1,3 @@
-// src/components/charts/ActiveFilterChips.tsx
 import React, { useMemo } from 'react';
 import { Tag, Space, Button, Tooltip } from 'antd';
 import {
@@ -19,39 +18,38 @@ import { useComponentLogger } from '@/utils/logger';
 import type { ChartMetric } from '@/store/slices/chartFiltersSlice';
 import styles from './ActiveFilterChips.module.css';
 
-// County code to name mapping
 const COUNTY_NAMES: Record<string, string> = {
-  'CAR': 'Carlow',
-  'CAV': 'Cavan',
-  'CLA': 'Clare',
-  'COR': 'Cork',
-  'CORKCITY': 'Cork City',
-  'DCC': 'Dublin City',
-  'DLRD': 'Dún Laoghaire-Rathdown',
-  'DON': 'Donegal',
-  'FIN': 'Fingal',
-  'GALCITY': 'Galway City',
-  'GAL': 'Galway',
-  'KER': 'Kerry',
-  'KIL': 'Kildare',
-  'KIK': 'Kilkenny',
-  'LAO': 'Laois',
-  'LEI': 'Leitrim',
-  'LIM': 'Limerick',
-  'LON': 'Longford',
-  'LOU': 'Louth',
-  'MAY': 'Mayo',
-  'MEA': 'Meath',
-  'MON': 'Monaghan',
-  'OFF': 'Offaly',
-  'ROS': 'Roscommon',
-  'SLI': 'Sligo',
-  'STHDUB': 'South Dublin',
-  'TIP': 'Tipperary',
-  'WAT': 'Waterford',
-  'WES': 'Westmeath',
-  'WEX': 'Wexford',
-  'WIC': 'Wicklow',
+  CAR: 'Carlow',
+  CAV: 'Cavan',
+  CLA: 'Clare',
+  COR: 'Cork',
+  CORKCITY: 'Cork City',
+  DCC: 'Dublin City',
+  DLRD: 'Dún Laoghaire-Rathdown',
+  DON: 'Donegal',
+  FIN: 'Fingal',
+  GALCITY: 'Galway City',
+  GAL: 'Galway',
+  KER: 'Kerry',
+  KIL: 'Kildare',
+  KIK: 'Kilkenny',
+  LAO: 'Laois',
+  LEI: 'Leitrim',
+  LIM: 'Limerick',
+  LON: 'Longford',
+  LOU: 'Louth',
+  MAY: 'Mayo',
+  MEA: 'Meath',
+  MON: 'Monaghan',
+  OFF: 'Offaly',
+  ROS: 'Roscommon',
+  SLI: 'Sligo',
+  STHDUB: 'South Dublin',
+  TIP: 'Tipperary',
+  WAT: 'Waterford',
+  WES: 'Westmeath',
+  WEX: 'Wexford',
+  WIC: 'Wicklow',
 };
 
 interface FilterChip {
@@ -79,46 +77,34 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
 }) => {
   const logger = useComponentLogger('ActiveFilterChips');
 
-  // Store state and actions
-  const {
-    chartFilters,
-    setChartMetric,
-    setChartPrimaryYear,
-    setChartCompareYear,
-    removeChartCounty,
-    setChartSortBy,
-    setChartSortOrder,
-    setChartTopN,
-    resetChartFilters,
-  } = useAnalyticsStore((state) => ({
-    chartFilters: state.chartFilters,
-    setChartMetric: state.setChartMetric,
-    setChartPrimaryYear: state.setChartPrimaryYear,
-    setChartCompareYear: state.setChartCompareYear,
-    removeChartCounty: state.removeChartCounty,
-    setChartSortBy: state.setChartSortBy,
-    setChartSortOrder: state.setChartSortOrder,
-    setChartTopN: state.setChartTopN,
-    resetChartFilters: state.resetChartFilters,
-  }));
+  // ✅ One-selector-per-field; no equality function arg
+  const chartFilters = useAnalyticsStore((s) => s.chartFilters);
+  const setChartMetric = useAnalyticsStore((s) => s.setChartMetric);
+  const setChartPrimaryYear = useAnalyticsStore((s) => s.setChartPrimaryYear);
+  const setChartCompareYear = useAnalyticsStore((s) => s.setChartCompareYear);
+  const removeChartCounty = useAnalyticsStore((s) => s.removeChartCounty);
+  const setChartSortBy = useAnalyticsStore((s) => s.setChartSortBy);
+  const setChartSortOrder = useAnalyticsStore((s) => s.setChartSortOrder);
+  const setChartTopN = useAnalyticsStore((s) => s.setChartTopN);
+  const resetChartFilters = useAnalyticsStore((s) => s.resetChartFilters);
 
   // Generate filter chips from current state
-  const filterChips = useMemo((): FilterChip[] => {
+  const filterChips = useMemo<FilterChip[]>(() => {
     const chips: FilterChip[] = [];
 
     // Metric chip (only if not default)
     if (chartFilters.metric !== DEFAULT_CHART_FILTERS.metric) {
       const metricIcons: Record<ChartMetric, React.ReactNode> = {
-        'percentage': <PercentageOutlined />,
-        'length': <BarChartOutlined />,
-        'cost': <DollarOutlined />,
+        percentage: <PercentageOutlined />,
+        length: <BarChartOutlined />,
+        cost: <DollarOutlined />,
       };
-      
       chips.push({
         id: 'metric',
         type: 'metric',
         label: `Metric: ${chartFilters.metric}`,
-        icon: metricIcons[chartFilters.metric],
+        // TS: ensure key is ChartMetric
+        icon: metricIcons[chartFilters.metric as ChartMetric],
         color: 'blue',
         removable: true,
         onRemove: () => {
@@ -144,7 +130,7 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
       });
     }
 
-    // Compare year chip
+    // Compare year chip (only if a comparison is active)
     if (chartFilters.compareYear) {
       chips.push({
         id: 'compare',
@@ -160,8 +146,8 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
       });
     }
 
-    // County chips
-    chartFilters.selectedCounties.forEach((county) => {
+    // County chips (one per selected county)
+    chartFilters.selectedCounties.forEach((county: string) => {
       chips.push({
         id: `county-${county}`,
         type: 'county',
@@ -176,7 +162,7 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
       });
     });
 
-    // Sort chip (only if not default)
+    // Sort chip (only if sort is not default)
     if (
       chartFilters.sortBy !== DEFAULT_CHART_FILTERS.sortBy ||
       chartFilters.sortOrder !== DEFAULT_CHART_FILTERS.sortOrder
@@ -196,7 +182,7 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
       });
     }
 
-    // Top N chip
+    // Top N chip (only if a Top N filter is active)
     if (chartFilters.showTopN !== null) {
       chips.push({
         id: 'limit',
@@ -225,18 +211,13 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
     setChartTopN,
   ]);
 
-  // Handle clear all
   const handleClearAll = () => {
     logger.action('clearAllFilters');
     resetChartFilters();
   };
 
-  // Don't render if no active filters
-  if (filterChips.length === 0) {
-    return null;
-  }
+  if (filterChips.length === 0) return null;
 
-  // Split chips into visible and overflow
   const visibleChips = filterChips.slice(0, maxVisible);
   const overflowChips = filterChips.slice(maxVisible);
   const hasOverflow = overflowChips.length > 0;
@@ -245,7 +226,6 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
     <div className={`${styles.container} ${className || ''}`}>
       <AnimatePresence mode="popLayout">
         <Space size={[4, 4]} wrap className={styles.chipsWrapper}>
-          {/* Render visible chips */}
           {visibleChips.map((chip) => (
             <motion.div
               key={chip.id}
@@ -270,7 +250,6 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
             </motion.div>
           ))}
 
-          {/* Overflow indicator */}
           {hasOverflow && (
             <Tooltip
               title={
@@ -284,19 +263,12 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
                 </div>
               }
             >
-              <Tag className={styles.overflowChip}>
-                +{overflowChips.length} more
-              </Tag>
+              <Tag className={styles.overflowChip}>+{overflowChips.length} more</Tag>
             </Tooltip>
           )}
 
-          {/* Clear all button */}
           {showClearAll && filterChips.length > 1 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.1 }}
-            >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
               <Button
                 type="text"
                 size="small"
@@ -311,7 +283,6 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
         </Space>
       </AnimatePresence>
 
-      {/* Summary text */}
       <div className={styles.summary}>
         <span className={styles.summaryText}>
           {filterChips.length} active filter{filterChips.length !== 1 ? 's' : ''}

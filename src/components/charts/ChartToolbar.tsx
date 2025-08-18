@@ -1,16 +1,5 @@
-// src/components/charts/ChartToolbar.tsx
 import React, { useMemo, useCallback } from 'react';
-import { 
-  Space, 
-  Segmented, 
-  Select, 
-  Button, 
-  Tooltip, 
-  Dropdown,
-  message,
-  Grid,
-  Badge,
-} from 'antd';
+import { Space, Segmented, Select, Button, Tooltip, Dropdown, message, Grid, Badge } from 'antd';
 import {
   PercentageOutlined,
   BarChartOutlined,
@@ -24,8 +13,8 @@ import {
   ExpandOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import { useAnalyticsStore, selectors } from '@/store/useAnalyticsStore';
-import { CHART_FILTER_PRESETS } from '@/store/slices/chartFiltersSlice';
+import { useAnalyticsStore } from '@/store/useAnalyticsStore';
+import { CHART_FILTER_PRESETS, DEFAULT_CHART_FILTERS } from '@/store/slices/chartFiltersSlice';
 import { useComponentLogger } from '@/utils/logger';
 import type { SurveyYear } from '@/types/data';
 import type { ChartMetric } from '@/store/slices/chartFiltersSlice';
@@ -34,39 +23,38 @@ import styles from './ChartToolbar.module.css';
 const { Option } = Select;
 const { useBreakpoint } = Grid;
 
-// County code to name mapping
 const COUNTY_NAMES: Record<string, string> = {
-  'CAR': 'Carlow',
-  'CAV': 'Cavan',
-  'CLA': 'Clare',
-  'COR': 'Cork',
-  'CORKCITY': 'Cork City',
-  'DCC': 'Dublin City',
-  'DLRD': 'Dún Laoghaire-Rathdown',
-  'DON': 'Donegal',
-  'FIN': 'Fingal',
-  'GALCITY': 'Galway City',
-  'GAL': 'Galway',
-  'KER': 'Kerry',
-  'KIL': 'Kildare',
-  'KIK': 'Kilkenny',
-  'LAO': 'Laois',
-  'LEI': 'Leitrim',
-  'LIM': 'Limerick',
-  'LON': 'Longford',
-  'LOU': 'Louth',
-  'MAY': 'Mayo',
-  'MEA': 'Meath',
-  'MON': 'Monaghan',
-  'OFF': 'Offaly',
-  'ROS': 'Roscommon',
-  'SLI': 'Sligo',
-  'STHDUB': 'South Dublin',
-  'TIP': 'Tipperary',
-  'WAT': 'Waterford',
-  'WES': 'Westmeath',
-  'WEX': 'Wexford',
-  'WIC': 'Wicklow',
+  CAR: 'Carlow',
+  CAV: 'Cavan',
+  CLA: 'Clare',
+  COR: 'Cork',
+  CORKCITY: 'Cork City',
+  DCC: 'Dublin City',
+  DLRD: 'Dún Laoghaire-Rathdown',
+  DON: 'Donegal',
+  FIN: 'Fingal',
+  GALCITY: 'Galway City',
+  GAL: 'Galway',
+  KER: 'Kerry',
+  KIL: 'Kildare',
+  KIK: 'Kilkenny',
+  LAO: 'Laois',
+  LEI: 'Leitrim',
+  LIM: 'Limerick',
+  LON: 'Longford',
+  LOU: 'Louth',
+  MAY: 'Mayo',
+  MEA: 'Meath',
+  MON: 'Monaghan',
+  OFF: 'Offaly',
+  ROS: 'Roscommon',
+  SLI: 'Sligo',
+  STHDUB: 'South Dublin',
+  TIP: 'Tipperary',
+  WAT: 'Waterford',
+  WES: 'Westmeath',
+  WEX: 'Wexford',
+  WIC: 'Wicklow',
 };
 
 interface ChartToolbarProps {
@@ -87,207 +75,198 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
   const isMobile = !screens.md;
   const isTablet = screens.md && !screens.lg;
 
-  // Store state and actions
-  const {
-    chartFilters,
-    summaryData,
-    hasActiveFilters,
-    activeFilterCount,
-    setChartMetric,
-    setChartPrimaryYear,
-    setChartCompareYear,
-    setChartCounties,
-    resetChartFilters,
-  } = useAnalyticsStore((state) => ({
-    chartFilters: state.chartFilters,
-    summaryData: state.data.summaryData,
-    hasActiveFilters: selectors.hasActiveChartFilters(state),
-    activeFilterCount: selectors.activeChartFilterCount(state),
-    setChartMetric: state.setChartMetric,
-    setChartPrimaryYear: state.setChartPrimaryYear,
-    setChartCompareYear: state.setChartCompareYear,
-    setChartCounties: state.setChartCounties,
-    resetChartFilters: state.resetChartFilters,
-  }));
+  // ✅ One-selector-per-field; no equality function arg
+  const chartFilters = useAnalyticsStore((s) => s.chartFilters);
+  const summaryData = useAnalyticsStore((s) => s.data?.summaryData);
+  const setChartMetric = useAnalyticsStore((s) => s.setChartMetric);
+  const setChartPrimaryYear = useAnalyticsStore((s) => s.setChartPrimaryYear);
+  const setChartCompareYear = useAnalyticsStore((s) => s.setChartCompareYear);
+  const setChartCounties = useAnalyticsStore((s) => s.setChartCounties);
+  const resetChartFilters = useAnalyticsStore((s) => s.resetChartFilters);
 
-  // Available counties from data
+  // Derive "has active filters" and a count locally (avoids external selectors)
+  const { hasActiveFilters, activeFilterCount } = useMemo(() => {
+    let count = 0;
+    if (chartFilters.metric !== DEFAULT_CHART_FILTERS.metric) count += 1;
+    if (chartFilters.primaryYear !== DEFAULT_CHART_FILTERS.primaryYear) count += 1;
+    if (chartFilters.compareYear) count += 1;
+    if (chartFilters.selectedCounties.length > 0) count += chartFilters.selectedCounties.length;
+    if (
+      chartFilters.sortBy !== DEFAULT_CHART_FILTERS.sortBy ||
+      chartFilters.sortOrder !== DEFAULT_CHART_FILTERS.sortOrder
+    ) {
+      count += 1;
+    }
+    if (chartFilters.showTopN !== null) count += 1;
+
+    return { hasActiveFilters: count > 0, activeFilterCount: count };
+  }, [chartFilters]);
+
+  // Available counties for multi-select
   const availableCounties = useMemo(() => {
     if (!summaryData?.localAuthorities) return [];
     return [...summaryData.localAuthorities].sort();
   }, [summaryData]);
 
-  // Available years for comparison (exclude primary year)
+  // Compare-year options (exclude current primaryYear)
   const compareYearOptions = useMemo(() => {
     const years: SurveyYear[] = ['2011', '2018'];
-    return years.filter(year => year !== chartFilters.primaryYear);
+    return years.filter((y) => y !== chartFilters.primaryYear);
   }, [chartFilters.primaryYear]);
 
-  // Metric options with icons
-  const metricOptions = useMemo(() => [
-    {
-      label: (
-        <span className={styles.metricOption}>
-          <PercentageOutlined />
-          <span className={styles.metricLabel}>Percentage</span>
-        </span>
-      ),
-      value: 'percentage' as ChartMetric,
-    },
-    {
-      label: (
-        <span className={styles.metricOption}>
-          <BarChartOutlined />
-          <span className={styles.metricLabel}>Length</span>
-        </span>
-      ),
-      value: 'length' as ChartMetric,
-    },
-    {
-      label: (
-        <span className={styles.metricOption}>
-          <DollarOutlined />
-          <span className={styles.metricLabel}>Cost</span>
-        </span>
-      ),
-      value: 'cost' as ChartMetric,
-    },
-  ], []);
-
-  // Quick filter presets menu
-  const presetMenuItems: MenuProps['items'] = useMemo(() => 
-    Object.entries(CHART_FILTER_PRESETS).map(([key, preset]) => ({
-      key,
-      label: preset.name,
-      onClick: () => {
-        logger.action('applyPreset', { preset: key });
-        setChartCounties(preset.counties);
-        message.success(`Applied ${preset.name} filter`);
+  // Metric options
+  const metricOptions = useMemo(
+    () => [
+      {
+        label: (
+          <span className={styles.metricOption}>
+            <PercentageOutlined />
+            <span className={styles.metricLabel}>Percentage</span>
+          </span>
+        ),
+        value: 'percentage' as ChartMetric,
       },
-    })),
-  [setChartCounties, logger]);
+      {
+        label: (
+          <span className={styles.metricOption}>
+            <BarChartOutlined />
+            <span className={styles.metricLabel}>Length</span>
+          </span>
+        ),
+        value: 'length' as ChartMetric,
+      },
+      {
+        label: (
+          <span className={styles.metricOption}>
+            <DollarOutlined />
+            <span className={styles.metricLabel}>Cost</span>
+          </span>
+        ),
+        value: 'cost' as ChartMetric,
+      },
+    ],
+    []
+  );
 
-  // Handle metric change
-  const handleMetricChange = useCallback((value: string | number) => {
-    const metric = value as ChartMetric;
-    logger.action('changeMetric', { from: chartFilters.metric, to: metric });
-    setChartMetric(metric);
-  }, [chartFilters.metric, setChartMetric, logger]);
+  // Preset menu
+  const presetMenuItems: MenuProps['items'] = useMemo(
+    () =>
+      Object.entries(CHART_FILTER_PRESETS).map(([key, preset]) => ({
+        key,
+        label: preset.name,
+        onClick: () => {
+          logger.action('applyPreset', { preset: key });
+          setChartCounties(preset.counties);
+          message.success(`Applied ${preset.name} filter`);
+        },
+      })),
+    [setChartCounties, logger]
+  );
 
-  // Handle year change
-  const handleYearChange = useCallback((value: SurveyYear) => {
-    logger.action('changeYear', { from: chartFilters.primaryYear, to: value });
-    setChartPrimaryYear(value);
-  }, [chartFilters.primaryYear, setChartPrimaryYear, logger]);
+  // Handlers
+  const handleMetricChange = useCallback(
+    (value: string | number) => {
+      const metric = value as ChartMetric;
+      logger.action('changeMetric', { from: chartFilters.metric, to: metric });
+      setChartMetric(metric);
+    },
+    [chartFilters.metric, setChartMetric, logger]
+  );
 
-  // Handle compare year change
-  const handleCompareYearChange = useCallback((value: SurveyYear | undefined) => {
-    logger.action('changeCompareYear', { 
-      from: chartFilters.compareYear, 
-      to: value || null 
-    });
-    setChartCompareYear(value || null);
-  }, [chartFilters.compareYear, setChartCompareYear, logger]);
+  const handleYearChange = useCallback(
+    (value: SurveyYear) => {
+      logger.action('changeYear', { from: chartFilters.primaryYear, to: value });
+      setChartPrimaryYear(value);
+    },
+    [chartFilters.primaryYear, setChartPrimaryYear, logger]
+  );
 
-  // Handle county selection
-  const handleCountyChange = useCallback((values: string[]) => {
-    logger.action('changeCounties', { 
-      count: values.length,
-      counties: values 
-    });
-    setChartCounties(values);
-  }, [setChartCounties, logger]);
+  const handleCompareYearChange = useCallback(
+    (value: SurveyYear | undefined) => {
+      logger.action('changeCompareYear', { from: chartFilters.compareYear, to: value || null });
+      setChartCompareYear(value || null);
+    },
+    [chartFilters.compareYear, setChartCompareYear, logger]
+  );
 
-  // Copy link to clipboard
+  const handleCountyChange = useCallback(
+    (values: string[]) => {
+      logger.action('changeCounties', { count: values.length, counties: values });
+      setChartCounties(values);
+    },
+    [setChartCounties, logger]
+  );
+
   const handleCopyLink = useCallback(() => {
     const params = new URLSearchParams();
-    
-    if (chartFilters.metric !== 'percentage') {
-      params.set('metric', chartFilters.metric);
-    }
-    if (chartFilters.primaryYear !== '2018') {
-      params.set('year', chartFilters.primaryYear);
-    }
-    if (chartFilters.compareYear) {
-      params.set('compare', chartFilters.compareYear);
-    }
-    if (chartFilters.selectedCounties.length > 0) {
-      params.set('counties', chartFilters.selectedCounties.join(','));
-    }
-    
+    if (chartFilters.metric !== DEFAULT_CHART_FILTERS.metric) params.set('metric', chartFilters.metric);
+    if (chartFilters.primaryYear !== DEFAULT_CHART_FILTERS.primaryYear) params.set('year', chartFilters.primaryYear);
+    if (chartFilters.compareYear) params.set('compare', chartFilters.compareYear);
+    if (chartFilters.selectedCounties.length > 0) params.set('counties', chartFilters.selectedCounties.join(','));
+
     const url = `${window.location.origin}${window.location.pathname}${
       params.toString() ? `?${params.toString()}` : ''
     }`;
-    
     navigator.clipboard.writeText(url).then(() => {
       message.success('Link copied to clipboard');
       logger.action('copyLink', { url });
     });
   }, [chartFilters, logger]);
 
-  // Handle reset
   const handleReset = useCallback(() => {
     logger.action('resetFilters');
     resetChartFilters();
     message.info('Filters reset to defaults');
   }, [resetChartFilters, logger]);
 
-  // Render county selector dropdown content
-  const renderCountyDropdown = useCallback((menu: React.ReactElement) => (
-    <div className={styles.countyDropdown}>
-      <div className={styles.dropdownHeader}>
-        <Button 
-          type="link" 
-          size="small"
-          onClick={() => setChartCounties(availableCounties)}
-        >
-          Select All
-        </Button>
-        <Button 
-          type="link" 
-          size="small"
-          onClick={() => setChartCounties([])}
-        >
-          Clear
-        </Button>
-        <Dropdown menu={{ items: presetMenuItems }} placement="bottomRight">
-          <Button type="link" size="small">
-            Quick Presets
+  // Enhance county dropdown with quick actions
+  const renderCountyDropdown = useCallback(
+    (menu: React.ReactElement) => (
+      <div className={styles.countyDropdown}>
+        <div className={styles.dropdownHeader}>
+          <Button type="link" size="small" onClick={() => setChartCounties(availableCounties)}>
+            Select All
           </Button>
-        </Dropdown>
+          <Button type="link" size="small" onClick={() => setChartCounties([])}>
+            Clear
+          </Button>
+          <Dropdown menu={{ items: presetMenuItems }} placement="bottomRight">
+            <Button type="link" size="small">
+              Quick Presets
+            </Button>
+          </Dropdown>
+        </div>
+        {menu}
       </div>
-      {menu}
-    </div>
-  ), [availableCounties, presetMenuItems, setChartCounties]);
+    ),
+    [availableCounties, presetMenuItems, setChartCounties]
+  );
 
-  // Calculate responsive tag count
   const maxTagCount = useMemo(() => {
     if (isMobile) return 1;
     if (isTablet) return 2;
-    return 'responsive';
+    return 'responsive' as const;
   }, [isMobile, isTablet]);
 
   return (
-    <Space 
-      wrap 
-      size="small" 
-      className={`${styles.toolbar} ${className || ''}`}
-    >
-      {/* Metric Selector */}
+    <Space wrap size="small" className={`${styles.toolbar} ${className || ''}`}>
+      {/* Metric */}
       <Segmented
         value={chartFilters.metric}
         onChange={handleMetricChange}
-        options={isMobile ? 
-          // Simple icon-only options for mobile
-          [
-            { label: <PercentageOutlined />, value: 'percentage' as ChartMetric },
-            { label: <BarChartOutlined />, value: 'length' as ChartMetric },
-            { label: <DollarOutlined />, value: 'cost' as ChartMetric },
-          ] : metricOptions
+        options={
+          isMobile
+            ? [
+                { label: <PercentageOutlined />, value: 'percentage' as ChartMetric },
+                { label: <BarChartOutlined />, value: 'length' as ChartMetric },
+                { label: <DollarOutlined />, value: 'cost' as ChartMetric },
+              ]
+            : metricOptions
         }
         className={styles.metricSelector}
       />
 
-      {/* Year Selector */}
+      {/* Year */}
       <Select
         value={chartFilters.primaryYear}
         onChange={handleYearChange}
@@ -300,21 +279,18 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
         placeholder="Year"
       />
 
-      {/* Compare Year Selector */}
+      {/* Compare Year */}
       <Select
         allowClear
         placeholder="Compare"
         value={chartFilters.compareYear || undefined}
         onChange={handleCompareYearChange}
-        options={compareYearOptions.map(year => ({
-          label: year,
-          value: year,
-        }))}
+        options={compareYearOptions.map((y) => ({ label: y, value: y }))}
         style={{ minWidth: isMobile ? 100 : 120 }}
         suffixIcon={<CalendarOutlined />}
       />
 
-      {/* County Multi-Select */}
+      {/* Counties */}
       <Badge count={chartFilters.selectedCounties.length} offset={[-8, 0]}>
         <Select
           mode="multiple"
@@ -327,13 +303,13 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
           suffixIcon={<EnvironmentOutlined />}
           dropdownRender={renderCountyDropdown}
           filterOption={(input, option) => {
-            const countyCode = option?.value as string;
+            const countyCode = (option?.value ?? '') as string;
             const countyName = COUNTY_NAMES[countyCode] || countyCode;
-            return countyName.toLowerCase().includes(input.toLowerCase()) ||
-                   countyCode.toLowerCase().includes(input.toLowerCase());
+            const q = input.toLowerCase();
+            return countyName.toLowerCase().includes(q) || countyCode.toLowerCase().includes(q);
           }}
         >
-          {availableCounties.map(code => (
+          {availableCounties.map((code: string) => (
             <Option key={code} value={code}>
               <span className={styles.countyOption}>
                 <span>{COUNTY_NAMES[code] || code}</span>
@@ -344,43 +320,28 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
         </Select>
       </Badge>
 
-      {/* Action Buttons */}
+      {/* Actions */}
       <Space.Compact>
         <Tooltip title="Copy shareable link">
-          <Button 
-            icon={<LinkOutlined />} 
-            onClick={handleCopyLink}
-          />
+          <Button icon={<LinkOutlined />} onClick={handleCopyLink} />
         </Tooltip>
-        
+
         {onExport && (
           <Tooltip title="Export chart">
-            <Button 
-              icon={<DownloadOutlined />} 
-              onClick={onExport}
-            />
+            <Button icon={<DownloadOutlined />} onClick={onExport} />
           </Tooltip>
         )}
-        
+
         {onFullscreen && (
           <Tooltip title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
-            <Button 
-              icon={isFullscreen ? <CompressOutlined /> : <ExpandOutlined />} 
-              onClick={onFullscreen}
-            />
+            <Button icon={isFullscreen ? <CompressOutlined /> : <ExpandOutlined />} onClick={onFullscreen} />
           </Tooltip>
         )}
-        
+
         <Tooltip title="Reset filters">
-          <Button 
-            icon={<ReloadOutlined />} 
-            onClick={handleReset}
-            disabled={!hasActiveFilters}
-          >
+          <Button icon={<ReloadOutlined />} onClick={handleReset} disabled={!hasActiveFilters}>
             {!isMobile && activeFilterCount > 0 && (
-              <span className={styles.resetLabel}>
-                Reset ({activeFilterCount})
-              </span>
+              <span className={styles.resetLabel}>Reset ({activeFilterCount})</span>
             )}
           </Button>
         </Tooltip>
