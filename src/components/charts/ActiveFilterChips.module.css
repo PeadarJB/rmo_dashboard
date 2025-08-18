@@ -1,0 +1,222 @@
+/* src/components/charts/ActiveFilterChips.module.css */
+
+.container {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--ant-color-border-secondary);
+  margin-bottom: 12px;
+}
+
+.chipsWrapper {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* Base chip styling */
+.chip {
+  font-size: 12px;
+  height: 24px;
+  line-height: 22px;
+  padding: 0 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.chipLabel {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Chip type-specific styling */
+.chip.metric {
+  background: rgba(24, 144, 255, 0.1);
+  border-color: rgba(24, 144, 255, 0.3);
+}
+
+.chip.year {
+  background: rgba(82, 196, 26, 0.1);
+  border-color: rgba(82, 196, 26, 0.3);
+}
+
+.chip.compare {
+  background: rgba(114, 46, 209, 0.1);
+  border-color: rgba(114, 46, 209, 0.3);
+}
+
+.chip.county {
+  background: rgba(250, 173, 20, 0.1);
+  border-color: rgba(250, 173, 20, 0.3);
+}
+
+.chip.sort {
+  background: rgba(19, 194, 194, 0.1);
+  border-color: rgba(19, 194, 194, 0.3);
+}
+
+.chip.limit {
+  background: rgba(235, 47, 150, 0.1);
+  border-color: rgba(235, 47, 150, 0.3);
+}
+
+/* Chip close button */
+.chip :global(.ant-tag-close-icon) {
+  margin-left: 4px;
+  font-size: 10px;
+  color: var(--ant-color-text-secondary);
+  transition: color 0.2s;
+}
+
+.chip :global(.ant-tag-close-icon:hover) {
+  color: var(--ant-color-error);
+}
+
+/* Overflow chip */
+.overflowChip {
+  background: var(--ant-color-fill-tertiary);
+  border: 1px dashed var(--ant-color-border);
+  color: var(--ant-color-text-secondary);
+  cursor: help;
+  padding: 0 8px;
+  height: 24px;
+  line-height: 22px;
+}
+
+.overflowChip:hover {
+  background: var(--ant-color-fill-secondary);
+  border-color: var(--ant-color-primary);
+}
+
+/* Overflow tooltip content */
+.overflowTooltip {
+  max-width: 300px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.overflowItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  color: var(--ant-color-text);
+  font-size: 12px;
+}
+
+.overflowItem:not(:last-child) {
+  border-bottom: 1px solid var(--ant-color-border-secondary);
+}
+
+/* Clear button */
+.clearButton {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 12px;
+  color: var(--ant-color-text-tertiary);
+  border: 1px solid var(--ant-color-border);
+  background: var(--ant-color-bg-container);
+}
+
+.clearButton:hover {
+  color: var(--ant-color-error);
+  border-color: var(--ant-color-error-border);
+  background: var(--ant-color-error-bg);
+}
+
+/* Summary text */
+.summary {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.summaryText {
+  font-size: 11px;
+  color: var(--ant-color-text-tertiary);
+  font-style: italic;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 6px 0;
+    margin-bottom: 8px;
+  }
+  
+  .chipLabel {
+    max-width: 100px;
+  }
+  
+  .chip {
+    font-size: 11px;
+    height: 22px;
+    line-height: 20px;
+    padding: 0 6px;
+  }
+  
+  .summary {
+    display: none;
+  }
+}
+
+/* Animation */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.chip {
+  animation: slideIn 0.2s ease-out;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .chip {
+    opacity: 0.9;
+  }
+  
+  .chip:hover {
+    opacity: 1;
+  }
+  
+  .overflowChip {
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
+/* Print styles */
+@media print {
+  .container {
+    display: none;
+  }
+}
+
+/* Accessibility */
+.chip:focus-visible {
+  outline: 2px solid var(--ant-color-primary);
+  outline-offset: 1px;
+}
+
+/* Loading state */
+.container.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
