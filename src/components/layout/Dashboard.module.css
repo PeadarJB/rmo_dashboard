@@ -1,6 +1,6 @@
 .appWrapper {
   min-height: 100vh;
-  background: #f0f2f5;
+  background: var(--ant-color-bg-layout);
   position: relative; /* Needed for positioning children */
   overflow-x: hidden; /* Prevent horizontal scroll */
 }
@@ -35,12 +35,6 @@
 
 .mainChartSection {
   min-height: 450px;
-}
-
-@media (prefers-color-scheme: dark) {
-  .appWrapper {
-    background: #141414;
-  }
 }
 
 /* Mobile layout will be handled by hiding the desktop sider entirely */

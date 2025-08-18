@@ -1,18 +1,18 @@
+// src/components/layout/ControlsSider.tsx
 import React from 'react';
-import { motion, AnimatePresence, Variants } from 'framer-motion'; // Import Variants type
+import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { Button } from 'antd';
+import { CloseOutlined, ControlOutlined } from '@ant-design/icons';
 import { ParameterCostControls } from '@/components/controls/ParameterCostControls';
 import { FilterBar } from '@/components/controls/FilterBar';
 import styles from './ControlsSider.module.css';
 
 interface ControlsSiderProps {
   isVisible: boolean;
+  onClose: () => void;
 }
 
-/**
- * An animated, overlaying sidebar for user controls.
- */
-export const ControlsSider: React.FC<ControlsSiderProps> = ({ isVisible }) => {
-  // Explicitly type the variants object with the 'Variants' type from Framer Motion
+export const ControlsSider: React.FC<ControlsSiderProps> = ({ isVisible, onClose }) => {
   const siderVariants: Variants = {
     hidden: {
       x: '-100%',
@@ -34,6 +34,16 @@ export const ControlsSider: React.FC<ControlsSiderProps> = ({ isVisible }) => {
           exit="hidden"
           variants={siderVariants}
         >
+          <div className={styles.siderHeader}>
+            <h3><ControlOutlined /> Controls</h3>
+            <Button
+              type="text"
+              shape="circle"
+              icon={<CloseOutlined />}
+              onClick={onClose}
+              aria-label="Close controls panel"
+            />
+          </div>
           <div className={styles.siderContent}>
             <ParameterCostControls />
             <FilterBar />

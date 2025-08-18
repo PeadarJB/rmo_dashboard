@@ -1,3 +1,4 @@
+// src/components/layout/Dashboard.tsx
 import React, { useState } from 'react';
 import { Layout, theme } from 'antd';
 import styles from './Dashboard.module.css';
@@ -25,19 +26,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   return (
-    // The main wrapper no longer needs to be a flex container
     <div className={styles.appWrapper}>
-      {/* The Sider is rendered here but positioned fixed, so it doesn't affect layout */}
-      <ControlsSider isVisible={siderVisible} />
+      {/* Pass the toggleSider function as the onClose prop */}
+      <ControlsSider isVisible={siderVisible} onClose={toggleSider} />
 
-      {/* The main layout's margin will adjust to make space for the sider */}
-      <Layout
-        className={styles.mainLayout}
-        style={{
-          paddingLeft: siderVisible ? '350px' : '0px',
-          transition: 'padding-left 0.3s ease-in-out',
-        }}
-      >
+      <Layout className={styles.mainLayout}>
         <Layout.Header
           className={styles.header}
           style={{ background: token.colorBgContainer, padding: 0 }}
@@ -46,7 +39,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             onThemeChange={onThemeChange}
             isDarkMode={isDarkMode}
             onMenuClick={toggleSider}
-            isSiderVisible={siderVisible} // Pass visibility state to the header
+            isSiderVisible={siderVisible}
           />
         </Layout.Header>
 
