@@ -1,11 +1,8 @@
 // src/components/charts/MaintenanceCategoryChart.tsx
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { Card, Button, Space, Empty, Spin, Segmented, Tooltip as AntTooltip, theme } from 'antd';
+import { Card, Button, Empty, Spin, theme } from 'antd';
 import {
   BarChartOutlined,
-  PercentageOutlined,
-  DownloadOutlined,
-  FullscreenOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
 import {
@@ -25,6 +22,8 @@ import { useAnalyticsStore } from '@/store/useAnalyticsStore';
 import { useComponentLogger, usePerformanceTimer } from '@/utils/logger';
 import type { MaintenanceCategory } from '@/types/calculations';
 import styles from './MaintenanceCategoryChart.module.css';
+import { ChartToolbar } from './ChartToolbar';
+import { ActiveFilterChips } from './ActiveFilterChips';
 
 // Register Chart.js components
 ChartJS.register(
@@ -39,13 +38,11 @@ ChartJS.register(
 interface MaintenanceCategoryChartProps {
   height?: number;
   onCategoryClick?: (category: MaintenanceCategory) => void;
-  showComparison?: boolean;
 }
 
 export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> = ({
   height = 400,
   onCategoryClick,
-  showComparison = false,
 }) => {
   const logger = useComponentLogger('MaintenanceCategoryChart');
   const perfTimer = usePerformanceTimer('ChartRender');
@@ -53,28 +50,32 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
   const { token } = theme.useToken();
 
   // Store state
-  const calculationResults = useAnalyticsStore(state => state.cache.results);
-  const selectedYear = useAnalyticsStore(state => state.parameters.selectedYear);
-  const isLoading = useAnalyticsStore(state => state.ui.isLoading);
-
-  // Local state
-  const [viewMode, setViewMode] = useState<'length' | 'cost' | 'percentage'>('percentage');
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const {
+    calculationResults,
+    chartFilters,
+    isLoading,
+  } = useAnalyticsStore(state => ({
+    calculationResults: state.cache.results,
+    chartFilters: state.chartFilters,
+    isLoading: state.ui.isLoading,
+  }));
 
   useEffect(() => {
-    logger.mount({ showComparison, selectedYear });
+    logger.mount({ 
+      primaryYear: chartFilters.primaryYear, 
+      isComparisonMode: chartFilters.isComparisonMode 
+    });
     return () => logger.unmount();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Process chart data
   const chartData = useMemo((): ChartData<'bar'> | null => {
     perfTimer.start();
-
     if (!calculationResults.summary) {
       perfTimer.end();
       return null;
     }
-
     const categories: MaintenanceCategory[] = [
       'Road Reconstruction',
       'Structural Overlay',
@@ -82,78 +83,73 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
       'Restoration of Skid Resistance',
       'Routine Maintenance',
     ];
-
     const colors = {
       'Road Reconstruction': token.colorError,
       'Structural Overlay': token.colorWarning,
-      'Surface Restoration': '#fadb14', // custom yellow
+      'Surface Restoration': '#fadb14',
       'Restoration of Skid Resistance': token.colorSuccess,
       'Routine Maintenance': token.colorPrimary,
     };
-
     const datasets = [];
-
-    // Add 2018 data
-    if (selectedYear === '2018' || selectedYear === 'both') {
-      const summary2018 = calculationResults.summary['2018'];
-      const data2018 = categories.map(cat => {
-        const categoryData = summary2018?.by_category[cat];
+    // Use chartFilters.primaryYear instead of selectedYear
+    const primaryYear = chartFilters.primaryYear;
+    const summaryData = calculationResults.summary[primaryYear];
+  
+    if (summaryData) {
+      const data = categories.map(cat => {
+        const categoryData = summaryData.by_category[cat];
         if (!categoryData) return 0;
-
-        switch (viewMode) {
+        // Use chartFilters.metric instead of viewMode
+        switch (chartFilters.metric) {
           case 'length':
-            return categoryData.total_length_m / 1000; // Convert to km
+            return categoryData.total_length_m / 1000; // km
           case 'cost':
-            return categoryData.total_cost / 1e6; // Convert to millions
+            return categoryData.total_cost / 1e6; // millions
           case 'percentage':
             return categoryData.percentage;
           default:
             return 0;
         }
       });
-
       datasets.push({
-        label: '2018',
-        data: data2018,
+        label: primaryYear,
+        data,
         backgroundColor: categories.map(cat => colors[cat]),
         borderColor: categories.map(cat => colors[cat]),
         borderWidth: 1,
       });
     }
-
-    // Add 2011 data for comparison
-    if ((selectedYear === '2011' || selectedYear === 'both') && showComparison) {
-      const summary2011 = calculationResults.summary['2011'];
-      const data2011 = categories.map(cat => {
-        const categoryData = summary2011?.by_category[cat];
-        if (!categoryData) return 0;
-
-        switch (viewMode) {
-          case 'length':
-            return categoryData.total_length_m / 1000;
-          case 'cost':
-            return categoryData.total_cost / 1e6;
-          case 'percentage':
-            return categoryData.percentage;
-          default:
-            return 0;
-        }
-      });
-
-      datasets.push({
-        label: '2011',
-        data: data2011,
-        backgroundColor: categories.map(cat => `${colors[cat]}80`), // Add transparency
-        borderColor: categories.map(cat => colors[cat]),
-        borderWidth: 1,
-      });
+  
+    // Add comparison data if enabled
+    if (chartFilters.isComparisonMode && chartFilters.compareYear) {
+      const compareData = calculationResults.summary[chartFilters.compareYear];
+      if (compareData) {
+        const data = categories.map(cat => {
+          const categoryData = compareData.by_category[cat];
+          if (!categoryData) return 0;
+          switch (chartFilters.metric) {
+            case 'length':
+              return categoryData.total_length_m / 1000;
+            case 'cost':
+              return categoryData.total_cost / 1e6;
+            case 'percentage':
+              return categoryData.percentage;
+            default:
+              return 0;
+          }
+        });
+        datasets.push({
+          label: chartFilters.compareYear,
+          data,
+          backgroundColor: categories.map(cat => `${colors[cat]}80`), // Add transparency
+          borderColor: categories.map(cat => colors[cat]),
+          borderWidth: 1,
+        });
+      }
     }
-
     perfTimer.end('chartUpdate');
-
     return {
       labels: categories.map(cat => {
-        // Shorten labels for mobile
         if (window.innerWidth < 768) {
           return cat.split(' ').map(word => word[0]).join('');
         }
@@ -161,7 +157,7 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
       }),
       datasets,
     };
-  }, [calculationResults, selectedYear, viewMode, showComparison, token]);
+  }, [calculationResults, chartFilters, token]);
 
   // Chart options
   const options: ChartOptions<'bar'> = useMemo(() => ({
@@ -169,7 +165,7 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        display: showComparison && selectedYear === 'both',
+        display: chartFilters.isComparisonMode && chartFilters.compareYear !== null,
         position: 'top' as const,
         labels: { color: token.colorTextSecondary },
       },
@@ -181,8 +177,7 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
           label: (context) => {
             const label = context.dataset.label || '';
             const value = context.parsed.y;
-
-            switch (viewMode) {
+            switch (chartFilters.metric) {
               case 'length':
                 return `${label}: ${value.toFixed(1)} km`;
               case 'cost':
@@ -210,8 +205,8 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
         beginAtZero: true,
         title: {
           display: true,
-          text: viewMode === 'length' ? 'Length (km)' :
-                viewMode === 'cost' ? 'Cost (€M)' :
+          text: chartFilters.metric === 'length' ? 'Length (km)' :
+                chartFilters.metric === 'cost' ? 'Cost (€M)' :
                 'Percentage (%)',
           color: token.colorTextSecondary,
         },
@@ -234,58 +229,25 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
         onCategoryClick(category);
       }
     },
-  }), [viewMode, showComparison, selectedYear, onCategoryClick, token]);
-
-  const handleViewModeChange = (mode: string | number) => {
-    const newMode = mode as 'length' | 'cost' | 'percentage';
-    logger.action('viewModeChange', { from: viewMode, to: newMode });
-    setViewMode(newMode);
-  };
-
+  }), [chartFilters, onCategoryClick, token]);
+  
   const handleExport = () => {
     logger.action('exportChart');
     if (chartRef.current) {
       const url = chartRef.current.toBase64Image();
       const link = document.createElement('a');
-      link.download = 'maintenance-categories.png';
+      link.download = `maintenance-categories-${chartFilters.primaryYear}.png`;
       link.href = url;
       link.click();
     }
   };
 
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const handleFullscreen = () => {
-    logger.action('toggleFullscreen', { isFullscreen: !isFullscreen });
     setIsFullscreen(!isFullscreen);
-    // TODO: Implement actual fullscreen
+    logger.action('toggleFullscreen', { isFullscreen: !isFullscreen });
   };
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <Card className={styles.chartCard}>
-        <div className={styles.loadingContainer} style={{ height }}>
-          <Spin size="large" tip="Loading chart data..." />
-        </div>
-      </Card>
-    );
-  }
-
-  // No data state
-  if (!chartData) {
-    return (
-      <Card className={styles.chartCard}>
-        <Empty
-          description="No calculation results available"
-          style={{ height }}
-        >
-          <Button type="primary" icon={<SyncOutlined />}>
-            Run Calculation
-          </Button>
-        </Empty>
-      </Card>
-    );
-  }
-
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -299,74 +261,64 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
             <span className={styles.chartTitle}>
               <BarChartOutlined /> Maintenance Categories
             </span>
-            <Segmented
-              value={viewMode}
-              onChange={handleViewModeChange}
-              options={[
-                {
-                  label: <AntTooltip title="View as percentage"><PercentageOutlined /></AntTooltip>,
-                  value: 'percentage',
-                },
-                {
-                  label: <AntTooltip title="View lengths">Length</AntTooltip>,
-                  value: 'length',
-                },
-                {
-                  label: <AntTooltip title="View costs">Cost</AntTooltip>,
-                  value: 'cost',
-                },
-              ]}
-              size="small"
-            />
           </div>
         }
         extra={
-          <Space>
-            <AntTooltip title="Export chart">
-              <Button
-                type="text"
-                icon={<DownloadOutlined />}
-                onClick={handleExport}
-              />
-            </AntTooltip>
-            <AntTooltip title="Fullscreen">
-              <Button
-                type="text"
-                icon={<FullscreenOutlined />}
-                onClick={handleFullscreen}
-              />
-            </AntTooltip>
-          </Space>
+          <ChartToolbar
+            onExport={handleExport}
+            onFullscreen={handleFullscreen}
+            isFullscreen={isFullscreen}
+          />
         }
       >
-        <div className={styles.chartContainer} style={{ height: isFullscreen ? 'calc(100vh - 120px)' : height }}>
-          <Bar ref={chartRef} options={options} data={chartData} />
+        {/* Active filter chips */}
+        <ActiveFilterChips
+           className={styles.filterChips}
+          maxVisible={8}
+          showClearAll={true}
+        />
+        <div className={styles.chartContainer} style={{ height: isFullscreen ? 'calc(100vh - 200px)' : height }}>
+          {isLoading ? (
+            <div className={styles.loadingContainer}>
+              <Spin size="large" tip="Loading chart data..." />
+            </div>
+          ) : chartData ? (
+            <Bar ref={chartRef} options={options} data={chartData} />
+          ) : (
+            <Empty
+              description="No calculation results available"
+              style={{ height }}
+            >
+              <Button type="primary" icon={<SyncOutlined />}>
+                Run Calculation
+              </Button>
+            </Empty>
+          )}
         </div>
-
-        {/* Legend for mobile */}
-        {window.innerWidth < 768 && (
+        {/* Mobile legend - update to use chartFilters */}
+        {window.innerWidth < 768 && !isLoading && chartData && (
           <div className={styles.mobileLegend}>
-             <div className={styles.legendItem}>
-               <span className={styles.legendColor} style={{ background: token.colorError }} />
-               RR: Road Reconstruction
-             </div>
-             <div className={styles.legendItem}>
-               <span className={styles.legendColor} style={{ background: token.colorWarning }} />
-               SO: Structural Overlay
-             </div>
-             <div className={styles.legendItem}>
-               <span className={styles.legendColor} style={{ background: '#fadb14' }} />
-               SR: Surface Restoration
-             </div>
-             <div className={styles.legendItem}>
-               <span className={styles.legendColor} style={{ background: token.colorSuccess }} />
-               RS: Restoration of Skid
-             </div>
-             <div className={styles.legendItem}>
-               <span className={styles.legendColor} style={{ background: token.colorPrimary }} />
-               RM: Routine Maintenance
-             </div>
-           </div>
+            <div className={styles.legendItem}>
+              <span className={styles.legendColor} style={{ background: token.colorError }} />
+              RR: Road Reconstruction
+            </div>
+            <div className={styles.legendItem}>
+              <span className={styles.legendColor} style={{ background: token.colorWarning }} />
+              SO: Structural Overlay
+            </div>
+            <div className={styles.legendItem}>
+              <span className={styles.legendColor} style={{ background: '#fadb14' }} />
+              SR: Surface Restoration
+            </div>
+            <div className={styles.legendItem}>
+              <span className={styles.legendColor} style={{ background: token.colorSuccess }} />
+              RS: Restoration of Skid
+            </div>
+            <div className={styles.legendItem}>
+              <span className={styles.legendColor} style={{ background: token.colorPrimary }} />
+              RM: Routine Maintenance
+            </div>
+          </div>
         )}
       </Card>
     </motion.div>
