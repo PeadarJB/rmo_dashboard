@@ -40,7 +40,7 @@
   flex-direction: column;
   gap: 8px;
   padding: 16px 0 8px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  border-top: 1px solid var(--ant-color-border-secondary);
   margin-top: 16px;
 }
 
@@ -49,7 +49,7 @@
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.65);
+  color: var(--ant-color-text-secondary);
 }
 
 .legendColor {
@@ -74,17 +74,6 @@
   }
 }
 
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  .legendItem {
-    color: rgba(255, 255, 255, 0.65);
-  }
-  
-  .mobileLegend {
-    border-top-color: rgba(255, 255, 255, 0.12);
-  }
-}
-
 /* Animations */
 .chartCard {
   transition: box-shadow 0.3s ease;
@@ -102,7 +91,7 @@
   right: 0;
   bottom: 0;
   z-index: 1000;
-  background: white;
+  background: var(--ant-color-bg-container);
   border-radius: 0;
 }
 

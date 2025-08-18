@@ -1,6 +1,6 @@
 // src/components/charts/CategoryBreakdownChart.tsx
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { Card, Button, Space, Empty, Spin, Select, Breadcrumb, Tooltip } from 'antd';
+import { Card, Button, Space, Empty, Spin, Select, Breadcrumb, Tooltip, theme } from 'antd';
 import {
   BarChartOutlined,
   SortAscendingOutlined,
@@ -50,37 +50,23 @@ interface CategoryBreakdownChartProps {
 
 // County name mapping
 const COUNTY_NAMES: Record<string, string> = {
-  'CAR': 'Carlow',
-  'CAV': 'Cavan',
-  'CLA': 'Clare',
-  'COR': 'Cork',
-  'CORKCITY': 'Cork City',
-  'DCC': 'Dublin City',
-  'DLRD': 'Dún Laoghaire-Rathdown',
-  'DON': 'Donegal',
-  'FIN': 'Fingal',
-  'GALCITY': 'Galway City',
-  'GAL': 'Galway',
-  'KER': 'Kerry',
-  'KIL': 'Kildare',
-  'KIK': 'Kilkenny',
-  'LAO': 'Laois',
-  'LEI': 'Leitrim',
-  'LIM': 'Limerick',
-  'LON': 'Longford',
-  'LOU': 'Louth',
-  'MAY': 'Mayo',
-  'MEA': 'Meath',
-  'MON': 'Monaghan',
-  'OFF': 'Offaly',
-  'ROS': 'Roscommon',
-  'SLI': 'Sligo',
-  'STHDUB': 'South Dublin',
-  'TIP': 'Tipperary',
-  'WAT': 'Waterford',
-  'WES': 'Westmeath',
-  'WEX': 'Wexford',
-  'WIC': 'Wicklow',
+  'CAR': 'Carlow', 'CAV': 'Cavan', 'CLA': 'Clare', 'COR': 'Cork',
+  'CORKCITY': 'Cork City', 'DCC': 'Dublin City', 'DLRD': 'Dún Laoghaire-Rathdown',
+  'DON': 'Donegal', 'FIN': 'Fingal', 'GALCITY': 'Galway City', 'GAL': 'Galway',
+  'KER': 'Kerry', 'KIL': 'Kildare', 'KIK': 'Kilkenny', 'LAO': 'Laois',
+  'LEI': 'Leitrim', 'LIM': 'Limerick', 'LON': 'Longford', 'LOU': 'Louth',
+  'MAY': 'Mayo', 'MEA': 'Meath', 'MON': 'Monaghan', 'OFF': 'Offaly',
+  'ROS': 'Roscommon', 'SLI': 'Sligo', 'STHDUB': 'South Dublin', 'TIP': 'Tipperary',
+  'WAT': 'Waterford', 'WES': 'Westmeath', 'WEX': 'Wexford', 'WIC': 'Wicklow',
+};
+
+// Define categoryColors once using theme tokens
+const CATEGORY_COLORS: Record<MaintenanceCategory, string> = {
+  'Road Reconstruction': '#ff4d4f',         // could use token.colorError
+  'Structural Overlay': '#fa8c16',          // custom orange (AntD orange-6)
+  'Surface Restoration': '#fadb14',         // custom yellow
+  'Restoration of Skid Resistance': '#52c41a', // could use token.colorSuccess
+  'Routine Maintenance': '#1890ff',         // could use token.colorPrimary
 };
 
 export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
@@ -92,13 +78,14 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
   const logger = useComponentLogger('CategoryBreakdownChart');
   const perfTimer = usePerformanceTimer('CategoryBreakdownRender');
   const chartRef = useRef<ChartJS<'bar'>>(null);
-  
+  const { token } = theme.useToken();
+
   // Store state
   const calculationResults = useAnalyticsStore(state => state.cache.results);
   const selectedYear = useAnalyticsStore(state => state.parameters.selectedYear);
   const selectedCounties = useAnalyticsStore(state => state.parameters.selectedCounties);
   const isLoading = useAnalyticsStore(state => state.ui.isLoading);
-  
+
   // Local state
   const [selectedCategory, setSelectedCategory] = useState<MaintenanceCategory>(
     category || 'Structural Overlay'
@@ -121,7 +108,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
   // Process chart data
   const chartData = useMemo((): ChartData<'bar'> | null => {
     perfTimer.start();
-    
+
     if (!calculationResults.segments || calculationResults.segments.length === 0) {
       perfTimer.end();
       return null;
@@ -129,23 +116,23 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
 
     // Get the year to display (prefer 2018 if available)
     const displayYear = selectedYear === '2011' ? '2011' : '2018';
-    
+
     // Aggregate data by county for the selected category
     const countyData: Record<string, { count: number; cost: number; length: number }> = {};
-    
+
     calculationResults.segments.forEach(segment => {
       const yearData = segment.data[displayYear];
       if (!yearData || yearData.category !== selectedCategory) return;
-      
+
       // Filter by selected counties if any
       if (selectedCounties.length > 0 && !selectedCounties.includes(segment.county)) {
         return;
       }
-      
+
       if (!countyData[segment.county]) {
         countyData[segment.county] = { count: 0, cost: 0, length: 0 };
       }
-      
+
       countyData[segment.county].count++;
       countyData[segment.county].cost += yearData.cost;
       countyData[segment.county].length += 100; // Each segment is 100m
@@ -186,19 +173,10 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
       return item.cost / 1e6; // Convert to millions
     });
 
-    // Category colors
-    const categoryColors: Record<MaintenanceCategory, string> = {
-      'Road Reconstruction': '#ff4d4f',
-      'Structural Overlay': '#fa8c16',
-      'Surface Restoration': '#fadb14',
-      'Restoration of Skid Resistance': '#52c41a',
-      'Routine Maintenance': '#1890ff',
-    };
-
-    const color = categoryColors[selectedCategory];
+    const color = CATEGORY_COLORS[selectedCategory];
 
     perfTimer.end('chartUpdate');
-    
+
     return {
       labels,
       datasets: [{
@@ -234,6 +212,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
       datalabels: {
         anchor: 'end',
         align: 'end',
+        color: token.colorText,
         formatter: (value: number) => {
           if (viewMode === 'percentage') {
             return `${value.toFixed(1)}%`;
@@ -252,26 +231,35 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
         title: {
           display: true,
           text: viewMode === 'percentage' ? 'Percentage (%)' : 'Cost (€M)',
+          color: token.colorTextSecondary,
         },
+        ticks: { color: token.colorTextSecondary },
+        grid: { color: token.colorSplit },
       },
       y: {
         ticks: {
           autoSkip: false,
+          color: token.colorTextSecondary,
           font: {
             size: window.innerWidth < 768 ? 10 : 12,
           },
         },
+        grid: { display: false },
       },
     },
     onClick: (_event, elements) => {
       if (elements.length > 0 && onCountyClick) {
         const index = elements[0].index;
-        const county = chartData?.labels?.[index] as string;
-        logger.action('countyClick', { county });
-        onCountyClick(county);
+        const countyCode = Object.keys(COUNTY_NAMES).find(
+          key => COUNTY_NAMES[key] === chartData?.labels?.[index]
+        );
+        if (countyCode) {
+          logger.action('countyClick', { county: countyCode });
+          onCountyClick(countyCode);
+        }
       }
     },
-  }), [viewMode, chartData, onCountyClick]);
+  }), [viewMode, chartData, onCountyClick, token]);
 
   const handleCategoryChange = (value: MaintenanceCategory) => {
     logger.action('categoryChange', { from: selectedCategory, to: value });
@@ -325,14 +313,9 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
   }
 
   const getTotalCost = (): number => {
-    if (!chartData || !chartData.datasets[0].data) return 0;
-    const data = chartData.datasets[0].data;
-    return data.reduce((sum: number, value: any) => {
-      if (typeof value === 'number') {
-        return sum + value;
-      }
-      return sum;
-    }, 0);
+    if (!calculationResults.summary) return 0;
+    const yearData = calculationResults.summary[selectedYear === '2011' ? '2011' : '2018'];
+    return yearData?.by_category[selectedCategory]?.total_cost || 0;
   };
 
   return (
@@ -367,7 +350,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
               <Option value="Restoration of Skid Resistance">Restoration of Skid</Option>
               <Option value="Routine Maintenance">Routine Maintenance</Option>
             </Select>
-            
+
             <Tooltip title={viewMode === 'absolute' ? 'Show percentages' : 'Show values'}>
               <Button
                 type={viewMode === 'percentage' ? 'primary' : 'default'}
@@ -376,7 +359,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
                 onClick={() => setViewMode(viewMode === 'absolute' ? 'percentage' : 'absolute')}
               />
             </Tooltip>
-            
+
             <Tooltip title={`Sort by ${sortBy === 'value' ? 'name' : 'value'}`}>
               <Button
                 icon={<BarChartOutlined />}
@@ -384,7 +367,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
                 onClick={handleSortByToggle}
               />
             </Tooltip>
-            
+
             <Tooltip title={`Sort ${sortOrder === 'asc' ? 'descending' : 'ascending'}`}>
               <Button
                 icon={sortOrder === 'asc' ? <SortAscendingOutlined /> : <SortDescendingOutlined />}
@@ -392,7 +375,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
                 onClick={handleSortToggle}
               />
             </Tooltip>
-            
+
             <Tooltip title="Export chart">
               <Button
                 icon={<DownloadOutlined />}
@@ -400,7 +383,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
                 onClick={handleExport}
               />
             </Tooltip>
-            
+
             {onBack && (
               <Button
                 icon={<ArrowLeftOutlined />}
@@ -440,7 +423,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
             <div className={styles.statItem}>
               <span className={styles.statLabel}>Total cost:</span>
               <span className={styles.statValue}>
-                €{getTotalCost().toFixed(1)}M
+                €{(getTotalCost() / 1e6).toFixed(1)}M
               </span>
             </div>
           </div>

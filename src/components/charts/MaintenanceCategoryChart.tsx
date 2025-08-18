@@ -1,6 +1,6 @@
 // src/components/charts/MaintenanceCategoryChart.tsx
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { Card, Button, Space, Empty, Spin, Segmented, Tooltip as AntTooltip } from 'antd';
+import { Card, Button, Space, Empty, Spin, Segmented, Tooltip as AntTooltip, theme } from 'antd';
 import {
   BarChartOutlined,
   PercentageOutlined,
@@ -50,12 +50,13 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
   const logger = useComponentLogger('MaintenanceCategoryChart');
   const perfTimer = usePerformanceTimer('ChartRender');
   const chartRef = useRef<ChartJS<'bar'>>(null);
-  
+  const { token } = theme.useToken();
+
   // Store state
   const calculationResults = useAnalyticsStore(state => state.cache.results);
   const selectedYear = useAnalyticsStore(state => state.parameters.selectedYear);
   const isLoading = useAnalyticsStore(state => state.ui.isLoading);
-  
+
   // Local state
   const [viewMode, setViewMode] = useState<'length' | 'cost' | 'percentage'>('percentage');
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -68,7 +69,7 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
   // Process chart data
   const chartData = useMemo((): ChartData<'bar'> | null => {
     perfTimer.start();
-    
+
     if (!calculationResults.summary) {
       perfTimer.end();
       return null;
@@ -83,11 +84,11 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
     ];
 
     const colors = {
-      'Road Reconstruction': '#ff4d4f',
-      'Structural Overlay': '#fa8c16',
-      'Surface Restoration': '#fadb14',
-      'Restoration of Skid Resistance': '#52c41a',
-      'Routine Maintenance': '#1890ff',
+      'Road Reconstruction': token.colorError,
+      'Structural Overlay': token.colorWarning,
+      'Surface Restoration': '#fadb14', // custom yellow
+      'Restoration of Skid Resistance': token.colorSuccess,
+      'Routine Maintenance': token.colorPrimary,
     };
 
     const datasets = [];
@@ -149,7 +150,7 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
     }
 
     perfTimer.end('chartUpdate');
-    
+
     return {
       labels: categories.map(cat => {
         // Shorten labels for mobile
@@ -160,7 +161,7 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
       }),
       datasets,
     };
-  }, [calculationResults, selectedYear, viewMode, showComparison]);
+  }, [calculationResults, selectedYear, viewMode, showComparison, token]);
 
   // Chart options
   const options: ChartOptions<'bar'> = useMemo(() => ({
@@ -170,6 +171,7 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
       legend: {
         display: showComparison && selectedYear === 'both',
         position: 'top' as const,
+        labels: { color: token.colorTextSecondary },
       },
       title: {
         display: false,
@@ -179,7 +181,7 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
           label: (context) => {
             const label = context.dataset.label || '';
             const value = context.parsed.y;
-            
+
             switch (viewMode) {
               case 'length':
                 return `${label}: ${value.toFixed(1)} km`;
@@ -196,10 +198,9 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
     },
     scales: {
       x: {
-        grid: {
-          display: false,
-        },
+        grid: { display: false },
         ticks: {
+          color: token.colorTextSecondary,
           autoSkip: false,
           maxRotation: window.innerWidth < 768 ? 45 : 0,
           minRotation: window.innerWidth < 768 ? 45 : 0,
@@ -212,7 +213,10 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
           text: viewMode === 'length' ? 'Length (km)' :
                 viewMode === 'cost' ? 'Cost (€M)' :
                 'Percentage (%)',
+          color: token.colorTextSecondary,
         },
+        ticks: { color: token.colorTextSecondary },
+        grid: { color: token.colorSplit },
       },
     },
     onClick: (_event, elements) => {
@@ -230,7 +234,7 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
         onCategoryClick(category);
       }
     },
-  }), [viewMode, showComparison, selectedYear, onCategoryClick]);
+  }), [viewMode, showComparison, selectedYear, onCategoryClick, token]);
 
   const handleViewModeChange = (mode: string | number) => {
     const newMode = mode as 'length' | 'cost' | 'percentage';
@@ -289,7 +293,7 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
       transition={{ duration: 0.3 }}
     >
       <Card
-        className={styles.chartCard}
+        className={`${styles.chartCard} ${isFullscreen ? styles.fullscreen : ''}`}
         title={
           <div className={styles.chartHeader}>
             <span className={styles.chartTitle}>
@@ -335,34 +339,34 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
           </Space>
         }
       >
-        <div className={styles.chartContainer} style={{ height }}>
+        <div className={styles.chartContainer} style={{ height: isFullscreen ? 'calc(100vh - 120px)' : height }}>
           <Bar ref={chartRef} options={options} data={chartData} />
         </div>
 
         {/* Legend for mobile */}
         {window.innerWidth < 768 && (
           <div className={styles.mobileLegend}>
-            <div className={styles.legendItem}>
-              <span className={styles.legendColor} style={{ background: '#ff4d4f' }} />
-              RR: Road Reconstruction
-            </div>
-            <div className={styles.legendItem}>
-              <span className={styles.legendColor} style={{ background: '#fa8c16' }} />
-              SO: Structural Overlay
-            </div>
-            <div className={styles.legendItem}>
-              <span className={styles.legendColor} style={{ background: '#fadb14' }} />
-              SR: Surface Restoration
-            </div>
-            <div className={styles.legendItem}>
-              <span className={styles.legendColor} style={{ background: '#52c41a' }} />
-              RS: Restoration of Skid
-            </div>
-            <div className={styles.legendItem}>
-              <span className={styles.legendColor} style={{ background: '#1890ff' }} />
-              RM: Routine Maintenance
-            </div>
-          </div>
+             <div className={styles.legendItem}>
+               <span className={styles.legendColor} style={{ background: token.colorError }} />
+               RR: Road Reconstruction
+             </div>
+             <div className={styles.legendItem}>
+               <span className={styles.legendColor} style={{ background: token.colorWarning }} />
+               SO: Structural Overlay
+             </div>
+             <div className={styles.legendItem}>
+               <span className={styles.legendColor} style={{ background: '#fadb14' }} />
+               SR: Surface Restoration
+             </div>
+             <div className={styles.legendItem}>
+               <span className={styles.legendColor} style={{ background: token.colorSuccess }} />
+               RS: Restoration of Skid
+             </div>
+             <div className={styles.legendItem}>
+               <span className={styles.legendColor} style={{ background: token.colorPrimary }} />
+               RM: Routine Maintenance
+             </div>
+           </div>
         )}
       </Card>
     </motion.div>
