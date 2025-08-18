@@ -4,7 +4,6 @@ import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { Button } from 'antd';
 import { CloseOutlined, ControlOutlined } from '@ant-design/icons';
 import { ParameterCostControls } from '@/components/controls/ParameterCostControls';
-import { FilterBar } from '@/components/controls/FilterBar';
 import styles from './ControlsSider.module.css';
 
 interface ControlsSiderProps {
@@ -46,7 +45,6 @@ export const ControlsSider: React.FC<ControlsSiderProps> = ({ isVisible, onClose
           </div>
           <div className={styles.siderContent}>
             <ParameterCostControls />
-            <FilterBar />
           </div>
         </motion.div>
       )}
