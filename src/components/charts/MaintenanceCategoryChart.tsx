@@ -15,7 +15,11 @@ import {
   Legend,
   ChartOptions,
   ChartData,
+  ChartEvent,
+  ActiveElement,
+  TooltipItem,
 } from 'chart.js';
+import ChartDataLabels, { Context } from 'chartjs-plugin-datalabels';
 import { Bar } from 'react-chartjs-2';
 import { motion } from 'framer-motion';
 import { useAnalyticsStore } from '@/store/useAnalyticsStore';
@@ -32,8 +36,18 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  ChartDataLabels
 );
+
+// Centralize the list of categories to avoid repetition and ensure consistency.
+const MAINTENANCE_CATEGORIES: MaintenanceCategory[] = [
+  'Road Reconstruction',
+  'Structural Overlay',
+  'Surface Restoration',
+  'Restoration of Skid Resistance',
+  'Routine Maintenance',
+];
 
 interface MaintenanceCategoryChartProps {
   height?: number;
@@ -70,13 +84,7 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
       perfTimer.end();
       return null;
     }
-    const categories: MaintenanceCategory[] = [
-      'Road Reconstruction',
-      'Structural Overlay',
-      'Surface Restoration',
-      'Restoration of Skid Resistance',
-      'Routine Maintenance',
-    ];
+
     const colors = {
       'Road Reconstruction': token.colorError,
       'Structural Overlay': token.colorWarning,
@@ -90,7 +98,7 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
     const summaryData = calculationResults.summary[primaryYear];
   
     if (summaryData) {
-      const data = categories.map(cat => {
+      const data = MAINTENANCE_CATEGORIES.map(cat => {
         const categoryData = summaryData.by_category[cat];
         if (!categoryData) return 0;
         // Use chartFilters.metric instead of viewMode
@@ -108,8 +116,8 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
       datasets.push({
         label: primaryYear,
         data,
-        backgroundColor: categories.map(cat => colors[cat]),
-        borderColor: categories.map(cat => colors[cat]),
+        backgroundColor: MAINTENANCE_CATEGORIES.map(cat => colors[cat]),
+        borderColor: MAINTENANCE_CATEGORIES.map(cat => colors[cat]),
         borderWidth: 1,
       });
     }
@@ -118,7 +126,7 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
     if (chartFilters.isComparisonMode && chartFilters.compareYear) {
       const compareData = calculationResults.summary[chartFilters.compareYear];
       if (compareData) {
-        const data = categories.map(cat => {
+        const data = MAINTENANCE_CATEGORIES.map(cat => {
           const categoryData = compareData.by_category[cat];
           if (!categoryData) return 0;
           switch (chartFilters.metric) {
@@ -135,15 +143,15 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
         datasets.push({
           label: chartFilters.compareYear,
           data,
-          backgroundColor: categories.map(cat => `${colors[cat]}80`), // Add transparency
-          borderColor: categories.map(cat => colors[cat]),
+          backgroundColor: MAINTENANCE_CATEGORIES.map(cat => `${colors[cat]}80`), // Add transparency
+          borderColor: MAINTENANCE_CATEGORIES.map(cat => colors[cat]),
           borderWidth: 1,
         });
       }
     }
     perfTimer.end('chartUpdate');
     return {
-      labels: categories.map(cat => {
+      labels: MAINTENANCE_CATEGORIES.map(cat => {
         if (window.innerWidth < 768) {
           return cat.split(' ').map(word => word[0]).join('');
         }
@@ -154,76 +162,82 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
   }, [calculationResults, chartFilters, token]);
 
   // Chart options
-  const options: ChartOptions<'bar'> = useMemo(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: chartFilters.isComparisonMode && chartFilters.compareYear !== null,
-        position: 'top' as const,
-        labels: { color: token.colorTextSecondary },
-      },
-      title: {
-        display: false,
-      },
-      tooltip: {
-        callbacks: {
-          label: (context) => {
-            const label = context.dataset.label || '';
-            const value = context.parsed.y;
-            switch (chartFilters.metric) {
-              case 'length':
-                return `${label}: ${value.toFixed(1)} km`;
-              case 'cost':
-                return `${label}: €${value.toFixed(2)}M`;
-              case 'percentage':
-                return `${label}: ${value.toFixed(1)}%`;
-              default:
-                return `${label}: ${value}`;
-            }
+  const options: ChartOptions<'bar'> = useMemo(() => {
+    // This helper function centralizes the label formatting logic for both tooltips and datalabels.
+    const formatMetricValue = (value: number, context: Context | TooltipItem<'bar'>) => {
+      const label = context.dataset.label || '';
+      // For tooltips, the value is in `context.parsed.y`. For datalabels, it's the `value` argument.
+      const numericValue = 'parsed' in context ? context.parsed.y : value;
+
+      switch (chartFilters.metric) {
+        case 'length':
+          return `${label}: ${numericValue.toFixed(1)} km`;
+        case 'cost':
+          return `${label}: €${numericValue.toFixed(2)}M`;
+        case 'percentage':
+          return `${label}: ${numericValue.toFixed(1)}%`;
+        default:
+          return `${label}: ${numericValue}`;
+      }
+    };
+
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: chartFilters.isComparisonMode && chartFilters.compareYear !== null,
+          position: 'top' as const,
+          labels: { color: token.colorTextSecondary },
+        },
+        title: {
+          display: false,
+        },
+        datalabels: {
+          anchor: 'end',
+          align: 'end',
+          formatter: (value: number, context: Context) => formatMetricValue(value, context),
+          color: token.colorText,
+        },
+        tooltip: {
+          callbacks: {
+            label: (context: TooltipItem<'bar'>) => formatMetricValue(0, context),
           },
         },
       },
-    },
-    scales: {
-      x: {
-        grid: { display: false },
-        ticks: {
-          color: token.colorTextSecondary,
-          autoSkip: false,
-          maxRotation: window.innerWidth < 768 ? 45 : 0,
-          minRotation: window.innerWidth < 768 ? 45 : 0,
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            color: token.colorTextSecondary,
+            autoSkip: false,
+            maxRotation: window.innerWidth < 768 ? 45 : 0,
+            minRotation: window.innerWidth < 768 ? 45 : 0,
+          },
+        },
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: chartFilters.metric === 'length' ? 'Length (km)' :
+                  chartFilters.metric === 'cost' ? 'Cost (€M)' :
+                  'Percentage (%)',
+            color: token.colorTextSecondary,
+          },
+          ticks: { color: token.colorTextSecondary },
+          grid: { color: token.colorSplit },
         },
       },
-      y: {
-        beginAtZero: true,
-        title: {
-          display: true,
-          text: chartFilters.metric === 'length' ? 'Length (km)' :
-                chartFilters.metric === 'cost' ? 'Cost (€M)' :
-                'Percentage (%)',
-          color: token.colorTextSecondary,
-        },
-        ticks: { color: token.colorTextSecondary },
-        grid: { color: token.colorSplit },
+      onClick: (_event: ChartEvent, elements: ActiveElement[]) => {
+        if (elements.length > 0 && onCategoryClick) {
+          const index = elements[0].index;
+          const category = MAINTENANCE_CATEGORIES[index];
+          logger.action('categoryClick', { category });
+          onCategoryClick(category);
+        }
       },
-    },
-    onClick: (_event, elements) => {
-      if (elements.length > 0 && onCategoryClick) {
-        const index = elements[0].index;
-        const categories: MaintenanceCategory[] = [
-          'Road Reconstruction',
-          'Structural Overlay',
-          'Surface Restoration',
-          'Restoration of Skid Resistance',
-          'Routine Maintenance',
-        ];
-        const category = categories[index];
-        logger.action('categoryClick', { category });
-        onCategoryClick(category);
-      }
-    },
-  }), [chartFilters, onCategoryClick, token]);
+    };
+  }, [chartFilters, onCategoryClick, token, logger]);
   
   const handleExport = () => {
     logger.action('exportChart');

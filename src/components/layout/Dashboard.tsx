@@ -4,6 +4,7 @@ import { Layout, theme } from 'antd';
 import styles from './Dashboard.module.css';
 import { Header } from './Header';
 import { ControlsSider } from './ControlsSider';
+import { useRecalculationManager } from '@/hooks/useRecalculationManager';
 
 const { Content } = Layout;
 
@@ -20,6 +21,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   const { token } = theme.useToken();
   const [siderVisible, setSiderVisible] = useState(true);
+  useRecalculationManager();
 
   const toggleSider = () => {
     setSiderVisible(!siderVisible);

@@ -158,9 +158,6 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
       });
     }
 
-    // Take top 20 for better visualization
-    sortedData = sortedData.slice(0, 20);
-
     // Calculate total for percentage view
     const totalCost = sortedData.reduce((sum, item) => sum + item.cost, 0);
 
@@ -185,6 +182,8 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
         backgroundColor: color,
         borderColor: color,
         borderWidth: 1,
+        barPercentage: 0.8,
+        categoryPercentage: 0.6,
       }],
     };
   }, [calculationResults, selectedCategory, sortBy, sortOrder, viewMode, selectedYear, selectedCounties]);
