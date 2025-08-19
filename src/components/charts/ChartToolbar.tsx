@@ -19,43 +19,10 @@ import { useComponentLogger } from '@/utils/logger';
 import type { SurveyYear } from '@/types/data';
 import type { ChartMetric } from '@/store/slices/chartFiltersSlice';
 import styles from './ChartToolbar.module.css';
+import { COUNTY_NAMES } from '@/utils/countyLabels';
 
 const { Option } = Select;
 const { useBreakpoint } = Grid;
-
-const COUNTY_NAMES: Record<string, string> = {
-  CAR: 'Carlow',
-  CAV: 'Cavan',
-  CLA: 'Clare',
-  COR: 'Cork',
-  CORKCITY: 'Cork City',
-  DCC: 'Dublin City',
-  DLRD: 'Dún Laoghaire-Rathdown',
-  DON: 'Donegal',
-  FIN: 'Fingal',
-  GALCITY: 'Galway City',
-  GAL: 'Galway',
-  KER: 'Kerry',
-  KIL: 'Kildare',
-  KIK: 'Kilkenny',
-  LAO: 'Laois',
-  LEI: 'Leitrim',
-  LIM: 'Limerick',
-  LON: 'Longford',
-  LOU: 'Louth',
-  MAY: 'Mayo',
-  MEA: 'Meath',
-  MON: 'Monaghan',
-  OFF: 'Offaly',
-  ROS: 'Roscommon',
-  SLI: 'Sligo',
-  STHDUB: 'South Dublin',
-  TIP: 'Tipperary',
-  WAT: 'Waterford',
-  WES: 'Westmeath',
-  WEX: 'Wexford',
-  WIC: 'Wicklow',
-};
 
 interface ChartToolbarProps {
   onExport?: () => void;
@@ -65,6 +32,7 @@ interface ChartToolbarProps {
 }
 
 export const ChartToolbar: React.FC<ChartToolbarProps> = ({
+  
   onExport,
   onFullscreen,
   isFullscreen = false,

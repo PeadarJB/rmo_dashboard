@@ -51,14 +51,14 @@ interface CategoryBreakdownChartProps {
 
 // County name mapping
 const COUNTY_NAMES: Record<string, string> = {
-  'CW': 'Carlow', 'CN': 'Cavan', 'CE': 'Clare', 'CK': 'Cork',
-  'CC': 'Cork City', 'DCC': 'Dublin City', 'DLR': 'Dún Laoghaire-Rathdown',
-  'DL': 'Donegal', 'FL': 'Fingal', 'GC': 'Galway City', 'GY': 'Galway',
-  'KY': 'Kerry', 'KE': 'Kildare', 'KK': 'Kilkenny', 'LS': 'Laois',
-  'LM': 'Leitrim', 'LK': 'Limerick', 'LD': 'Longford', 'LH': 'Louth',
-  'MO': 'Mayo', 'MH': 'Meath', 'MN': 'Monaghan', 'OY': 'Offaly',
-  'RN': 'Roscommon', 'SO': 'Sligo', 'SD': 'South Dublin', 'TY': 'Tipperary',
-  'WD': 'Waterford', 'WH': 'Westmeath', 'WX': 'Wexford', 'WW': 'Wicklow',
+  'CAR': 'Carlow', 'CAV': 'Cavan', 'CLA': 'Clare', 'COR': 'Cork',
+  'CORKCITY': 'Cork City', 'DCC': 'Dublin City', 'DLRD': 'Dún Laoghaire-Rathdown',
+  'DON': 'Donegal', 'FIN': 'Fingal', 'GALCITY': 'Galway City', 'GAL': 'Galway',
+  'KER': 'Kerry', 'KIL': 'Kildare', 'KIK': 'Kilkenny', 'LAO': 'Laois',
+  'LEI': 'Leitrim', 'LIM': 'Limerick', 'LON': 'Longford', 'LOU': 'Louth',
+  'MAY': 'Mayo', 'MEA': 'Meath', 'MON': 'Monaghan', 'OFF': 'Offaly',
+  'ROS': 'Roscommon', 'SLI': 'Sligo', 'STHDUB': 'South Dublin', 'TIP': 'Tipperary',
+  'WAT': 'Waterford', 'WES': 'Westmeath', 'WEX': 'Wexford', 'WIC': 'Wicklow',
 };
 
 // Define categoryColors once using theme tokens
@@ -109,26 +109,19 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
     }
   }, [category]);
 
-  // Process chart data
-  const chartData = useMemo((): ChartData<'bar'> | null => {
-    perfTimer.start();
-
+  // Memoize the sorted data so it can be used by both chartData and options.onClick
+  const sortedCountyData = useMemo(() => {
     if (!calculationResults.segments || calculationResults.segments.length === 0) {
-      perfTimer.end();
-      return null;
+      return [];
     }
 
-    // Get the year to display (prefer 2018 if available)
     const displayYear = selectedYear === '2011' ? '2011' : '2018';
-
-    // Aggregate data by county for the selected category
     const countyData: Record<string, { count: number; cost: number; length: number }> = {};
 
     calculationResults.segments.forEach(segment => {
       const yearData = segment.data[displayYear];
       if (!yearData || yearData.category !== selectedCategory) return;
 
-      // Filter by selected counties if any
       if (selectedCounties.length > 0 && !selectedCounties.includes(segment.county)) {
         return;
       }
@@ -139,38 +132,47 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
 
       countyData[segment.county].count++;
       countyData[segment.county].cost += yearData.cost;
-      countyData[segment.county].length += 100; // Each segment is 100m
+      countyData[segment.county].length += 100;
     });
 
-    // Convert to array and sort
-    let sortedData = Object.entries(countyData).map(([county, data]) => ({
+    let data = Object.entries(countyData).map(([county, data]) => ({
       county,
       name: COUNTY_NAMES[county] || county,
       ...data,
     }));
 
-    // Apply sorting
     if (sortBy === 'alphabetical') {
-      sortedData.sort((a, b) => {
+      data.sort((a, b) => {
         const comparison = a.name.localeCompare(b.name);
         return sortOrder === 'asc' ? comparison : -comparison;
       });
     } else {
-      sortedData.sort((a, b) => {
+      data.sort((a, b) => {
         const comparison = a.cost - b.cost;
         return sortOrder === 'asc' ? comparison : -comparison;
       });
     }
+    return data;
+  }, [calculationResults, selectedCategory, sortBy, sortOrder, selectedYear, selectedCounties]);
+
+  // Process chart data
+  const chartData = useMemo((): ChartData<'bar'> | null => {
+    perfTimer.start();
+
+    if (sortedCountyData.length === 0) {
+      perfTimer.end();
+      return null;
+    }
 
     // Calculate total for percentage view
-    const totalCost = sortedData.reduce((sum, item) => sum + item.cost, 0);
+    const totalCost = sortedCountyData.reduce((sum, item) => sum + item.cost, 0);
 
     // Prepare chart data
-    const labels = sortedData.map(item => {
+    const labels = sortedCountyData.map(item => {
       // Use abbreviation for mobile, full name for desktop
       return isMobile ? item.county : item.name;
     });
-    const data = sortedData.map(item => {
+    const data = sortedCountyData.map(item => {
       if (viewMode === 'percentage' && totalCost > 0) {
         return (item.cost / totalCost) * 100;
       }
@@ -193,7 +195,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
         categoryPercentage: 0.6,
       }],
     };
-  }, [calculationResults, selectedCategory, sortBy, sortOrder, viewMode, selectedYear, selectedCounties, isMobile]);
+  }, [sortedCountyData, viewMode, isMobile, selectedCategory, perfTimer]);
 
   // Chart options for horizontal bar
   const options: ChartOptions<'bar'> = useMemo(() => ({
@@ -256,25 +258,16 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
     onClick: (_event, elements) => {
       if (elements.length > 0 && onCountyClick) {
         const index = elements[0].index;
-        const label = chartData?.labels?.[index];
-        if (!label) return;
+        const clickedData = sortedCountyData[index];
 
-        let countyCode: string | undefined;
-        if (isMobile) {
-          // On mobile, the label *is* the county code
-          countyCode = label as string;
-        } else {
-          // On desktop, find the code from the full name label
-          countyCode = Object.keys(COUNTY_NAMES).find(key => COUNTY_NAMES[key] === label);
-        }
-
-        if (countyCode) {
+        if (clickedData) {
+          const countyCode = clickedData.county;
           logger.action('countyClick', { county: countyCode });
           onCountyClick(countyCode);
         }
       }
     },
-  }), [viewMode, chartData, onCountyClick, token, isMobile, logger]);
+  }), [viewMode, onCountyClick, token, isMobile, logger, sortedCountyData]);
 
   const handleCategoryChange = (value: MaintenanceCategory) => {
     logger.action('categoryChange', { from: selectedCategory, to: value });
