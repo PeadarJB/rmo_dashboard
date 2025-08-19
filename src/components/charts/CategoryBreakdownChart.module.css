@@ -36,6 +36,13 @@
     max-height: 350px;
   }
 }
+
+  @media (max-width: 500px) {
+  .chartContainerWrapper {
+    padding-right: 4px;
+    padding-left: 4px;
+  }
+}
 /* --- END UPDATED STYLES --- */
 
 

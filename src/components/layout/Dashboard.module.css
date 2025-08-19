@@ -43,3 +43,9 @@
     padding-left: 0 !important; /* On smaller screens, content is always full-width */
   }
 }
+
+@media (max-width: 500px) {
+  .content {
+    margin: 8px;
+  }
+}

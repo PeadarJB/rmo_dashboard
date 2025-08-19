@@ -1,6 +1,6 @@
 // src/components/charts/CategoryBreakdownChart.tsx
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { Card, Button, Space, Empty, Spin, Select, Breadcrumb, Tooltip, theme } from 'antd';
+import { Card, Button, Space, Empty, Spin, Select, Breadcrumb, Tooltip, theme, Grid } from 'antd';
 import {
   BarChartOutlined,
   SortAscendingOutlined,
@@ -40,6 +40,7 @@ ChartJS.register(
 );
 
 const { Option } = Select;
+const { useBreakpoint } = Grid;
 
 interface CategoryBreakdownChartProps {
   category?: MaintenanceCategory;
@@ -50,14 +51,14 @@ interface CategoryBreakdownChartProps {
 
 // County name mapping
 const COUNTY_NAMES: Record<string, string> = {
-  'CAR': 'Carlow', 'CAV': 'Cavan', 'CLA': 'Clare', 'COR': 'Cork',
-  'CORKCITY': 'Cork City', 'DCC': 'Dublin City', 'DLRD': 'Dún Laoghaire-Rathdown',
-  'DON': 'Donegal', 'FIN': 'Fingal', 'GALCITY': 'Galway City', 'GAL': 'Galway',
-  'KER': 'Kerry', 'KIL': 'Kildare', 'KIK': 'Kilkenny', 'LAO': 'Laois',
-  'LEI': 'Leitrim', 'LIM': 'Limerick', 'LON': 'Longford', 'LOU': 'Louth',
-  'MAY': 'Mayo', 'MEA': 'Meath', 'MON': 'Monaghan', 'OFF': 'Offaly',
-  'ROS': 'Roscommon', 'SLI': 'Sligo', 'STHDUB': 'South Dublin', 'TIP': 'Tipperary',
-  'WAT': 'Waterford', 'WES': 'Westmeath', 'WEX': 'Wexford', 'WIC': 'Wicklow',
+  'CW': 'Carlow', 'CN': 'Cavan', 'CE': 'Clare', 'CK': 'Cork',
+  'CC': 'Cork City', 'DCC': 'Dublin City', 'DLR': 'Dún Laoghaire-Rathdown',
+  'DL': 'Donegal', 'FL': 'Fingal', 'GC': 'Galway City', 'GY': 'Galway',
+  'KY': 'Kerry', 'KE': 'Kildare', 'KK': 'Kilkenny', 'LS': 'Laois',
+  'LM': 'Leitrim', 'LK': 'Limerick', 'LD': 'Longford', 'LH': 'Louth',
+  'MO': 'Mayo', 'MH': 'Meath', 'MN': 'Monaghan', 'OY': 'Offaly',
+  'RN': 'Roscommon', 'SO': 'Sligo', 'SD': 'South Dublin', 'TY': 'Tipperary',
+  'WD': 'Waterford', 'WH': 'Westmeath', 'WX': 'Wexford', 'WW': 'Wicklow',
 };
 
 // Define categoryColors once using theme tokens
@@ -79,6 +80,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
   const perfTimer = usePerformanceTimer('CategoryBreakdownRender');
   const chartRef = useRef<ChartJS<'bar'>>(null);
   const { token } = theme.useToken();
+  const screens = useBreakpoint();
 
   // Store state
   const calculationResults = useAnalyticsStore(state => state.cache.results);
@@ -93,6 +95,8 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
   const [sortBy, setSortBy] = useState<'value' | 'alphabetical'>('value');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [viewMode, setViewMode] = useState<'absolute' | 'percentage'>('absolute');
+
+  const isMobile = !screens.md; // Use breakpoint for responsive logic
 
   useEffect(() => {
     logger.mount({ category, selectedYear });
@@ -162,7 +166,10 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
     const totalCost = sortedData.reduce((sum, item) => sum + item.cost, 0);
 
     // Prepare chart data
-    const labels = sortedData.map(item => item.name);
+    const labels = sortedData.map(item => {
+      // Use abbreviation for mobile, full name for desktop
+      return isMobile ? item.county : item.name;
+    });
     const data = sortedData.map(item => {
       if (viewMode === 'percentage' && totalCost > 0) {
         return (item.cost / totalCost) * 100;
@@ -186,7 +193,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
         categoryPercentage: 0.6,
       }],
     };
-  }, [calculationResults, selectedCategory, sortBy, sortOrder, viewMode, selectedYear, selectedCounties]);
+  }, [calculationResults, selectedCategory, sortBy, sortOrder, viewMode, selectedYear, selectedCounties, isMobile]);
 
   // Chart options for horizontal bar
   const options: ChartOptions<'bar'> = useMemo(() => ({
@@ -218,7 +225,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
           }
           return `€${value.toFixed(1)}M`;
         },
-        display: window.innerWidth > 768, // Hide on mobile
+        display: !isMobile, // Hide on mobile for clarity
         font: {
           size: 10,
         },
@@ -240,7 +247,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
           autoSkip: false,
           color: token.colorTextSecondary,
           font: {
-            size: window.innerWidth < 768 ? 10 : 12,
+            size: isMobile ? 10 : 12,
           },
         },
         grid: { display: false },
@@ -249,16 +256,25 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
     onClick: (_event, elements) => {
       if (elements.length > 0 && onCountyClick) {
         const index = elements[0].index;
-        const countyCode = Object.keys(COUNTY_NAMES).find(
-          key => COUNTY_NAMES[key] === chartData?.labels?.[index]
-        );
+        const label = chartData?.labels?.[index];
+        if (!label) return;
+
+        let countyCode: string | undefined;
+        if (isMobile) {
+          // On mobile, the label *is* the county code
+          countyCode = label as string;
+        } else {
+          // On desktop, find the code from the full name label
+          countyCode = Object.keys(COUNTY_NAMES).find(key => COUNTY_NAMES[key] === label);
+        }
+
         if (countyCode) {
           logger.action('countyClick', { county: countyCode });
           onCountyClick(countyCode);
         }
       }
     },
-  }), [viewMode, chartData, onCountyClick, token]);
+  }), [viewMode, chartData, onCountyClick, token, isMobile, logger]);
 
   const handleCategoryChange = (value: MaintenanceCategory) => {
     logger.action('categoryChange', { from: selectedCategory, to: value });
