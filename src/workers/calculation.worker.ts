@@ -317,13 +317,9 @@ class CalculationWorker {
 
       // Create summaries based on selected year(s)
       const summary: CalculationSummary = {
-        '2011': params.selectedYear === '2018' 
-          ? this.aggregateResults([], '2011') // Empty if not selected
-          : this.aggregateResults(calculatedSegments, '2011'),
-        '2018': params.selectedYear === '2011'
-          ? this.aggregateResults([], '2018') // Empty if not selected
-          : this.aggregateResults(calculatedSegments, '2018'),
-        '2025': this.aggregateResults([], '2025'), // Always empty for now
+        '2011': this.aggregateResults(calculatedSegments, '2011'),
+        '2018': this.aggregateResults(calculatedSegments, '2018'),
+        '2025': this.aggregateResults([], '2025'), // Remains empty as there is no 2025 data
       };
 
       const durationMs = Date.now() - startTime;
