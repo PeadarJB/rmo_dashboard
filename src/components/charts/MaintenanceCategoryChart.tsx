@@ -196,6 +196,7 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
         datalabels: {
           anchor: 'end',
           align: 'end',
+          offset: 8,
           formatter: (value: number, context: Context) => formatMetricValue(value, context),
           color: token.colorText,
         },
@@ -217,6 +218,7 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
         },
         y: {
           beginAtZero: true,
+          grace: '10%',
           title: {
             display: true,
             text: chartFilters.metric === 'length' ? 'Length (km)' :
