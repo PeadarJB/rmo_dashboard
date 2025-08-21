@@ -10,6 +10,7 @@ export const useRecalculationManager = () => {
   const thresholds = useAnalyticsStore((state) => state.parameters.thresholds);
   const costs = useAnalyticsStore((state) => state.parameters.costs);
   const setIsLoading = useAnalyticsStore((state) => state.setIsLoading);
+  const selectedCounties = useAnalyticsStore((state) => state.parameters.selectedCounties);
 
   useEffect(() => {
     setIsLoading(isCalculating);
@@ -20,5 +21,5 @@ export const useRecalculationManager = () => {
       logger.info('RecalculationManager', 'Parameters changed, triggering recalculation.');
       calculate(fullDataset);
     }
-  }, [thresholds, costs, fullDataset, calculate]);
+  }, [thresholds, costs, selectedCounties, fullDataset, calculate]);
 };
