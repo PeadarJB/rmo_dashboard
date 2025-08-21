@@ -273,18 +273,18 @@ export const createChartFiltersActions = (set: any): ChartFiltersActions => ({
 export const CHART_FILTER_PRESETS = {
   dublinRegion: {
     name: 'Dublin Region',
-    counties: ['DCC', 'DLRD', 'FIN', 'STHDUB'],
+    counties: ['DCC', 'DLR', 'FL', 'SD'], // DCC stays, DLRD→DLR, FIN→FL, STHDUB→SD
   },
   cities: {
-    name: 'Cities Only',
-    counties: ['CORKCITY', 'DCC', 'GALCITY'],
+    name: 'Cities Only',  
+    counties: ['CC', 'DCC', 'GC'], // CORKCITY→CC, DCC stays, GALCITY→GC
   },
   western: {
     name: 'Western Counties',
-    counties: ['GAL', 'MAY', 'ROS', 'SLI', 'LEI', 'DON'],
+    counties: ['GY', 'MO', 'RN', 'SO', 'LM', 'DL'], // GAL→GY, MAY→MO, ROS→RN, SLI→SO, LEI→LM, DON→DL
   },
   topPopulated: {
     name: 'Top 5 by Population',
-    counties: ['DCC', 'COR', 'GAL', 'LIM', 'KIL'],
+    counties: ['DCC', 'CK', 'GY', 'LK', 'KE'], // DCC stays, COR→CK, GAL→GY, LIM→LK, KIL→KE
   },
 };

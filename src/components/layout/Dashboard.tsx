@@ -20,7 +20,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   isDarkMode = false,
 }) => {
   const { token } = theme.useToken();
-  const [siderVisible, setSiderVisible] = useState(true);
+  const [siderVisible, setSiderVisible] = useState(false);
   useRecalculationManager();
 
   const toggleSider = () => {
