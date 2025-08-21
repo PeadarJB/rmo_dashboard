@@ -218,7 +218,7 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
         },
         y: {
           beginAtZero: true,
-          grace: '10%',
+          grace: '5%',
           title: {
             display: true,
             text: chartFilters.metric === 'length' ? 'Length (km)' :
