@@ -11,6 +11,7 @@ import {
   LinkOutlined,
   CompressOutlined,
   ExpandOutlined,
+  FilterOutlined, // Import the new icon
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { useAnalyticsStore } from '@/store/useAnalyticsStore';
@@ -29,21 +30,22 @@ interface ChartToolbarProps {
   onFullscreen?: () => void;
   isFullscreen?: boolean;
   className?: string;
+  onOpenFilters?: () => void; // New prop to open the sider
 }
 
 export const ChartToolbar: React.FC<ChartToolbarProps> = ({
-  
   onExport,
   onFullscreen,
   isFullscreen = false,
   className,
+  onOpenFilters, // Destructure the new prop
 }) => {
   const logger = useComponentLogger('ChartToolbar');
   const screens = useBreakpoint();
   const isMobile = !screens.md;
   const isTablet = screens.md && !screens.lg;
 
-  // ✅ One-selector-per-field; no equality function arg
+  // Zustand store selectors
   const chartFilters = useAnalyticsStore((s) => s.chartFilters);
   const summaryData = useAnalyticsStore((s) => s.data?.summaryData);
   const setChartMetric = useAnalyticsStore((s) => s.setChartMetric);
@@ -53,20 +55,12 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
   const { selectedCounties } = useAnalyticsStore((s) => s.chartFilters);
   const setChartCounties = useAnalyticsStore((s) => s.setChartCounties);
 
-  // Derive "has active filters" and a count locally (avoids external selectors)
   const { hasActiveFilters, activeFilterCount } = useMemo(() => {
     let count = 0;
     if (chartFilters.metric !== DEFAULT_CHART_FILTERS.metric) count += 1;
     if (chartFilters.primaryYear !== DEFAULT_CHART_FILTERS.primaryYear) count += 1;
     if (chartFilters.compareYear) count += 1;
-    if (selectedCounties.length > 0) count += selectedCounties.length;
-    if (
-      chartFilters.sortBy !== DEFAULT_CHART_FILTERS.sortBy ||
-      chartFilters.sortOrder !== DEFAULT_CHART_FILTERS.sortOrder
-    ) {
-      count += 1;
-    }
-    if (chartFilters.showTopN !== null) count += 1;
+    count += chartFilters.selectedCounties.length;
 
     return { hasActiveFilters: count > 0, activeFilterCount: count };
   }, [chartFilters]);
@@ -135,74 +129,60 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
   // Handlers
   const handleMetricChange = useCallback(
     (value: string | number) => {
-      const metric = value as ChartMetric;
-      logger.action('changeMetric', { from: chartFilters.metric, to: metric });
-      setChartMetric(metric);
+      setChartMetric(value as ChartMetric);
     },
-    [chartFilters.metric, setChartMetric, logger]
+    [setChartMetric]
   );
 
   const handleYearChange = useCallback(
     (value: SurveyYear) => {
-      logger.action('changeYear', { from: chartFilters.primaryYear, to: value });
       setChartPrimaryYear(value);
     },
-    [chartFilters.primaryYear, setChartPrimaryYear, logger]
+    [setChartPrimaryYear]
   );
 
   const handleCompareYearChange = useCallback(
     (value: SurveyYear | undefined) => {
-      logger.action('changeCompareYear', { from: chartFilters.compareYear, to: value || null });
       setChartCompareYear(value || null);
     },
-    [chartFilters.compareYear, setChartCompareYear, logger]
+    [setChartCompareYear]
   );
 
   const handleCountyChange = useCallback(
     (values: string[]) => {
-      logger.action('changeCounties', { count: values.length, counties: values });
-      setChartCounties(values); // Use the chart filter setter
+      setChartCounties(values);
     },
-    [setChartCounties, logger]
+    [setChartCounties]
   );
 
   const handleCopyLink = useCallback(() => {
+    // This logic will be passed up to the parent to be handled in FilterControls
+    // For now, it remains here but will be moved.
     const params = new URLSearchParams();
     if (chartFilters.metric !== DEFAULT_CHART_FILTERS.metric) params.set('metric', chartFilters.metric);
     if (chartFilters.primaryYear !== DEFAULT_CHART_FILTERS.primaryYear) params.set('year', chartFilters.primaryYear);
     if (chartFilters.compareYear) params.set('compare', chartFilters.compareYear);
     if (chartFilters.selectedCounties.length > 0) params.set('counties', chartFilters.selectedCounties.join(','));
 
-    const url = `${window.location.origin}${window.location.pathname}${
-      params.toString() ? `?${params.toString()}` : ''
-    }`;
+    const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
     navigator.clipboard.writeText(url).then(() => {
       message.success('Link copied to clipboard');
-      logger.action('copyLink', { url });
     });
-  }, [chartFilters, logger]);
+  }, [chartFilters]);
 
   const handleReset = useCallback(() => {
-    logger.action('resetFilters');
     resetChartFilters();
     message.info('Filters reset to defaults');
-  }, [resetChartFilters, logger]);
+  }, [resetChartFilters]);
 
-  // Enhance county dropdown with quick actions
   const renderCountyDropdown = useCallback(
     (menu: React.ReactElement) => (
       <div className={styles.countyDropdown}>
         <div className={styles.dropdownHeader}>
-          <Button type="link" size="small" onClick={() => setChartCounties(availableCounties)}>
-            Select All
-          </Button>
-          <Button type="link" size="small" onClick={() => setChartCounties([])}>
-            Clear
-          </Button>
+          <Button type="link" size="small" onClick={() => setChartCounties(availableCounties)}>Select All</Button>
+          <Button type="link" size="small" onClick={() => setChartCounties([])}>Clear</Button>
           <Dropdown menu={{ items: presetMenuItems }} placement="bottomRight">
-            <Button type="link" size="small">
-              Quick Presets
-            </Button>
+            <Button type="link" size="small">Presets</Button>
           </Dropdown>
         </div>
         {menu}
@@ -212,113 +192,90 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
   );
 
   const maxTagCount = useMemo(() => {
-    if (isMobile) return 1;
     if (isTablet) return 2;
     return 'responsive' as const;
-  }, [isMobile, isTablet]);
+  }, [isTablet]);
+
+  // Conditional Rendering for Mobile vs. Desktop
+  if (isMobile) {
+    return (
+      <div className={`${styles.toolbar} ${className || ''}`}>
+        <Badge count={activeFilterCount} size="small">
+          <Button icon={<FilterOutlined />} onClick={onOpenFilters}>
+            Filters
+          </Button>
+        </Badge>
+      </div>
+    );
+  }
 
   return (
     <div className={`${styles.toolbar} ${className || ''}`}>
       <div className={styles.toolbarControls}>
-      {/* Metric */}
-      <Segmented
-        value={chartFilters.metric}
-        onChange={handleMetricChange}
-        options={
-          isMobile
-            ? [
-                { label: <PercentageOutlined />, value: 'percentage' as ChartMetric },
-                { label: <BarChartOutlined />, value: 'length' as ChartMetric },
-                { label: <DollarOutlined />, value: 'cost' as ChartMetric },
-              ]
-            : metricOptions
-        }
-        className={styles.metricSelector}
-      />
-
-      {/* Year */}
-      <Select
-        value={chartFilters.primaryYear}
-        onChange={handleYearChange}
-        options={[
-          { label: '2011', value: '2011' as SurveyYear },
-          { label: '2018', value: '2018' as SurveyYear },
-        ]}
-        style={{ minWidth: isMobile ? 80 : 96 }}
-        suffixIcon={<CalendarOutlined />}
-        placeholder="Year"
-      />
-
-      {/* Compare Year */}
-      <Select
-        allowClear
-        placeholder="Compare"
-        value={chartFilters.compareYear || undefined}
-        onChange={handleCompareYearChange}
-        options={compareYearOptions.map((y) => ({ label: y, value: y }))}
-        style={{ minWidth: isMobile ? 100 : 120 }}
-        suffixIcon={<CalendarOutlined />}
-      />
-
-      {/* Counties */}
-      <Badge count={selectedCounties.length} offset={[-8, 0]}>
+        <Segmented
+          value={chartFilters.metric}
+          onChange={handleMetricChange}
+          options={metricOptions}
+          className={styles.metricSelector}
+        />
         <Select
-          mode="multiple"
-          placeholder="All Counties"
-          value={chartFilters.selectedCounties}
-          onChange={handleCountyChange}
-          style={{ minWidth: isMobile ? 140 : 260 }}
-          maxTagCount={maxTagCount}
-          maxTagPlaceholder={(omitted) => `+${omitted.length} more`}
-          suffixIcon={<EnvironmentOutlined />}
-          popupRender={renderCountyDropdown}
-          filterOption={(input, option) => {
-            const countyCode = (option?.value ?? '') as string;
-            const countyName = COUNTY_NAMES[countyCode] || countyCode;
-            const q = input.toLowerCase();
-            return countyName.toLowerCase().includes(q) || countyCode.toLowerCase().includes(q);
-          }}
-        >
-          {availableCounties.map((code: string) => (
-            <Option key={code} value={code}>
-              <span className={styles.countyOption}>
-                <span>{COUNTY_NAMES[code] || code}</span>
-                <span className={styles.countyCode}>({code})</span>
-              </span>
-            </Option>
-          ))}
-        </Select>
-      </Badge>
+          value={chartFilters.primaryYear}
+          onChange={handleYearChange}
+          options={[{ label: '2011', value: '2011' }, { label: '2018', value: '2018' }]}
+          style={{ minWidth: 96 }}
+          suffixIcon={<CalendarOutlined />}
+        />
+        <Select
+          allowClear
+          placeholder="Compare"
+          value={chartFilters.compareYear || undefined}
+          onChange={handleCompareYearChange}
+          options={compareYearOptions.map((y) => ({ label: y, value: y }))}
+          style={{ minWidth: 120 }}
+          suffixIcon={<CalendarOutlined />}
+        />
+        <Badge count={selectedCounties.length} offset={[-8, 0]}>
+          <Select
+            mode="multiple"
+            placeholder="All Counties"
+            value={chartFilters.selectedCounties}
+            onChange={handleCountyChange}
+            style={{ minWidth: 260 }}
+            maxTagCount={maxTagCount}
+            maxTagPlaceholder={(omitted) => `+${omitted.length} more`}
+            suffixIcon={<EnvironmentOutlined />}
+            popupRender={renderCountyDropdown}
+            filterOption={(input, option) => {
+              const code = String(option?.value || '');
+              const name = COUNTY_NAMES[code] || '';
+              const lowerInput = input.toLowerCase();
+              // Search both county name and county code
+              return name.toLowerCase().includes(lowerInput) || code.toLowerCase().includes(lowerInput);
+            }}
+          >
+            {availableCounties.map((code: string) => (
+              <Option key={code} value={code} label={COUNTY_NAMES[code] || code}>
+                <span className={styles.countyOption}>
+                  <span>{COUNTY_NAMES[code] || code}</span>
+                  <span className={styles.countyCode}>({code})</span>
+                </span>
+              </Option>
+            ))}
+          </Select>
+        </Badge>
       </div>
-
       <div className={styles.toolbarActions}>
-      {/* Actions */}
-      <Space.Compact>
-        <Tooltip title="Copy shareable link">
-          <Button icon={<LinkOutlined />} onClick={handleCopyLink} />
-        </Tooltip>
-
-        {onExport && (
-          <Tooltip title="Export chart">
-            <Button icon={<DownloadOutlined />} onClick={onExport} />
+        <Space.Compact>
+          <Tooltip title="Copy shareable link"><Button icon={<LinkOutlined />} onClick={handleCopyLink} /></Tooltip>
+          {onExport && <Tooltip title="Export chart"><Button icon={<DownloadOutlined />} onClick={onExport} /></Tooltip>}
+          {onFullscreen && <Tooltip title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}><Button icon={isFullscreen ? <CompressOutlined /> : <ExpandOutlined />} onClick={onFullscreen} /></Tooltip>}
+          <Tooltip title="Reset filters">
+            <Button icon={<ReloadOutlined />} onClick={handleReset} disabled={!hasActiveFilters}>
+              {activeFilterCount > 0 && <span className={styles.resetLabel}>Reset ({activeFilterCount})</span>}
+            </Button>
           </Tooltip>
-        )}
-
-        {onFullscreen && (
-          <Tooltip title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
-            <Button icon={isFullscreen ? <CompressOutlined /> : <ExpandOutlined />} onClick={onFullscreen} />
-          </Tooltip>
-        )}
-
-        <Tooltip title="Reset filters">
-          <Button icon={<ReloadOutlined />} onClick={handleReset} disabled={!hasActiveFilters}>
-            {!isMobile && activeFilterCount > 0 && (
-              <span className={styles.resetLabel}>Reset ({activeFilterCount})</span>
-            )}
-          </Button>
-        </Tooltip>
-      </Space.Compact>
+        </Space.Compact>
       </div>
-      </div>
+    </div>
   );
 };

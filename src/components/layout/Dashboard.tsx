@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { Layout, theme } from 'antd';
 import styles from './Dashboard.module.css';
 import { Header } from './Header';
-import { ControlsSider } from './ControlsSider';
+import { ControlsSider, FilterSider } from './'; // Updated import
+import { FilterControls } from '@/components/controls'; // Import FilterControls
 import { useRecalculationManager } from '@/hooks/useRecalculationManager';
 
 const { Content } = Layout;
@@ -20,17 +21,27 @@ export const Dashboard: React.FC<DashboardProps> = ({
   isDarkMode = false,
 }) => {
   const { token } = theme.useToken();
-  const [siderVisible, setSiderVisible] = useState(false);
+  const [controlsSiderVisible, setControlsSiderVisible] = useState(false);
+  const [filterSiderVisible, setFilterSiderVisible] = useState(false); // New state for filter sider
   useRecalculationManager();
 
-  const toggleSider = () => {
-    setSiderVisible(!siderVisible);
+  const toggleControlsSider = () => {
+    setControlsSiderVisible(!controlsSiderVisible);
+  };
+
+  const toggleFilterSider = () => {
+    setFilterSiderVisible(!filterSiderVisible);
   };
 
   return (
     <div className={styles.appWrapper}>
-      {/* Pass the toggleSider function as the onClose prop */}
-      <ControlsSider isVisible={siderVisible} onClose={toggleSider} />
+      {/* Parameter Controls Sider (Left) */}
+      <ControlsSider isVisible={controlsSiderVisible} onClose={toggleControlsSider} />
+
+      {/* Filter & Display Sider (Right) */}
+      <FilterSider isVisible={filterSiderVisible} onClose={toggleFilterSider}>
+        <FilterControls />
+      </FilterSider>
 
       <Layout className={styles.mainLayout}>
         <Layout.Header
@@ -40,8 +51,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <Header
             onThemeChange={onThemeChange}
             isDarkMode={isDarkMode}
-            onMenuClick={toggleSider}
-            isSiderVisible={siderVisible}
+            onMenuClick={toggleControlsSider} // This controls the left sider
+            isSiderVisible={controlsSiderVisible}
+            // onFilterClick will be added in a later step
           />
         </Layout.Header>
 
