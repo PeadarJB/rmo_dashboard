@@ -8,7 +8,7 @@ import styles from './FilterSider.module.css';
 interface FilterSiderProps {
   isVisible: boolean;
   onClose: () => void;
-  children?: React.ReactNode; // To hold the filter controls later
+  children?: React.ReactNode; // This will hold the FilterControls component
 }
 
 export const FilterSider: React.FC<FilterSiderProps> = ({ isVisible, onClose, children }) => {
@@ -35,7 +35,9 @@ export const FilterSider: React.FC<FilterSiderProps> = ({ isVisible, onClose, ch
           variants={siderVariants}
         >
           <div className={styles.siderHeader}>
-            <h3><FilterOutlined /> Filters & Display</h3>
+            <h3>
+              <FilterOutlined /> Filters & Display
+            </h3>
             <Button
               type="text"
               shape="circle"
@@ -45,7 +47,7 @@ export const FilterSider: React.FC<FilterSiderProps> = ({ isVisible, onClose, ch
             />
           </div>
           <div className={styles.siderContent}>
-            {/* The ChartToolbar will be moved here in a later step */}
+            {/* The FilterControls component will be rendered here */}
             {children}
           </div>
         </motion.div>

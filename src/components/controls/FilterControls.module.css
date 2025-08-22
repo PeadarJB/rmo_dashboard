@@ -1,0 +1,57 @@
+/* src/components/controls/FilterControls.module.css */
+
+.controlsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+}
+
+.panel {
+  background: transparent !important;
+  border-bottom: none !important;
+}
+
+.panel :global(.ant-collapse-header) {
+  padding-left: 0 !important;
+}
+
+.panel :global(.ant-collapse-content-box) {
+  padding: 16px 0 0 0 !important;
+}
+
+.controlGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.controlGroup:last-child {
+  margin-bottom: 0;
+}
+
+.controlGroup label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ant-color-text-secondary);
+}
+
+/* County Dropdown Customization */
+.countyDropdown {
+  max-height: 400px;
+}
+
+.dropdownHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--ant-color-border-secondary);
+  background: var(--ant-color-fill-quaternary);
+}
+
+.dropdownHeader button {
+  font-size: 12px;
+  padding: 0 4px;
+}
