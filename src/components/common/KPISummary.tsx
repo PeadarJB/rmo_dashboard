@@ -10,65 +10,70 @@ export const KPISummary: React.FC = () => {
   const logger = useComponentLogger('KPISummary');
   
   // Get data from store
-  const summaryData = useAnalyticsStore(state => state.data.summaryData);
   const fullDataset = useAnalyticsStore(state => state.data.fullDataset);
-  const calculationResults = useAnalyticsStore(state => state.cache.results);
-  const isLoading = useAnalyticsStore(state => state.ui.isLoading);
+  const { results: calculationResults } = useAnalyticsStore(state => state.cache);
+  const { isLoading } = useAnalyticsStore(state => state.ui);
+  const { chartFilters } = useAnalyticsStore();
   
   // Calculate KPIs
   const kpis = useMemo(() => {
-    logger.action('calculateKPIs', { 
-      hasSummary: !!summaryData,
-      hasResults: !!calculationResults.summary 
-    });
+  logger.action('calculateKPIs', {
+    hasResults: !!calculationResults?.segments,
+    filterCount: chartFilters.selectedCounties.length,
+  });
 
-    // Total Cost (from calculation if available, otherwise from summary)
-    const totalCost = calculationResults.summary?.['2018']?.total_cost || 
-                   summaryData?.totalCost || 
-                   0;
+  // Use the primary year selected in the chart filters.
+  const yearToDisplay = chartFilters.primaryYear;
 
-    // Network Length (in km)
-    const networkLength = summaryData?.totalLength 
-      ? summaryData.totalLength / 1000 
-      : 0;
+  // Guard against missing data.
+  if (!calculationResults?.segments) {
+    return { totalCost: 0, networkLength: 0, conditionScore: 0, segmentsProcessed: 0, totalSegments: 0 };
+  }
 
-    // Network Condition Score (simplified calculation)
-    let conditionScore = 0;
-    if (calculationResults.summary?.['2018']) {
-      const summary2018 = calculationResults.summary['2018'];
-      // Weight categories: RM=100, RS=80, SR=60, SO=40, RR=20
-      const weights = {
-        'Routine Maintenance': 100,
-        'Restoration of Skid Resistance': 80,
-        'Surface Restoration': 60,
-        'Structural Overlay': 40,
-        'Road Reconstruction': 20,
-      };
-      
-      let totalWeighted = 0;
-      let totalLength = 0;
-      
-      Object.entries(summary2018.by_category).forEach(([category, data]) => {
-        const weight = weights[category as keyof typeof weights] || 0;
-        totalWeighted += weight * data.total_length_m;
-        totalLength += data.total_length_m;
-      });
-      
-      conditionScore = totalLength > 0 ? totalWeighted / totalLength : 0;
+  // Filter segments based on the chartFilters state.
+  const relevantSegments =
+    chartFilters.selectedCounties.length > 0
+      ? calculationResults.segments.filter(s => chartFilters.selectedCounties.includes(s.county))
+      : calculationResults.segments;
+
+  let totalCost = 0;
+  let totalLength = 0;
+  let totalWeightedScore = 0;
+
+  const weights = {
+    'Routine Maintenance': 100,
+    'Restoration of Skid Resistance': 80,
+    'Surface Restoration': 60,
+    'Structural Overlay': 40,
+    'Road Reconstruction': 20,
+  };
+
+  // Aggregate data from the filtered segments.
+  for (const segment of relevantSegments) {
+    const yearData = segment.data[yearToDisplay];
+    if (yearData) {
+      totalCost += yearData.cost;
+      totalLength += 100; // Each segment is 100m
+
+      const weight = weights[yearData.category as keyof typeof weights] || 0;
+      totalWeightedScore += weight * 100; // Multiply by segment length
     }
+  }
 
-    // Segments processed
-    const segmentsProcessed = calculationResults.segments?.length || 0;
-    const totalSegments = fullDataset?.length || summaryData?.totalSegments || 0;
+  const conditionScore = totalLength > 0 ? totalWeightedScore / totalLength : 0;
+  const segmentsProcessed = relevantSegments.length;
+  const totalSegments = chartFilters.selectedCounties.length > 0 
+    ? relevantSegments.length // Show count of filtered segments
+    : fullDataset?.length || 0; // Show total network count
 
-    return {
-      totalCost,
-      networkLength,
-      conditionScore,
-      segmentsProcessed,
-      totalSegments,
-    };
-  }, [summaryData, fullDataset, calculationResults]);
+  return {
+    totalCost,
+    networkLength: totalLength / 1000, // Convert to km
+    conditionScore,
+    segmentsProcessed,
+    totalSegments,
+  };
+}, [calculationResults, chartFilters, fullDataset, logger]);
 
   React.useEffect(() => {
     logger.mount({ kpis });

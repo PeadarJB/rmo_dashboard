@@ -80,39 +80,68 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
   // Process chart data
   const chartData = useMemo((): ChartData<'bar'> | null => {
     perfTimer.start();
-    if (!calculationResults.summary) {
+    if (!calculationResults.segments) {
       perfTimer.end();
       return null;
     }
 
-    const colors = {
+    const { primaryYear, compareYear, selectedCounties, metric, isComparisonMode } = chartFilters;
+
+    const filteredSegments =
+      selectedCounties.length > 0
+        ? calculationResults.segments.filter((s) => selectedCounties.includes(s.county))
+        : calculationResults.segments;
+
+    const aggregateYearData = (year: typeof primaryYear) => {
+      const yearData = {
+        totalCost: 0,
+        totalLength: 0,
+        byCategory: {} as Record<MaintenanceCategory, { cost: number; length: number; count: number }>,
+      };
+
+      MAINTENANCE_CATEGORIES.forEach(cat => {
+        yearData.byCategory[cat] = { cost: 0, length: 0, count: 0 };
+      });
+
+      for (const segment of filteredSegments) {
+        const conditions = segment.data[year];
+        if (conditions?.category) {
+          const category = conditions.category as MaintenanceCategory;
+          if (yearData.byCategory[category]) {
+            yearData.byCategory[category].cost += conditions.cost;
+            yearData.byCategory[category].length += 100;
+            yearData.byCategory[category].count++;
+            yearData.totalCost += conditions.cost;
+            yearData.totalLength += 100;
+          }
+        }
+      }
+      return yearData;
+    };
+
+    const datasets = [];
+    const colors: Record<MaintenanceCategory, string> = {
       'Road Reconstruction': token.colorError,
       'Structural Overlay': token.colorWarning,
-      'Surface Restoration': '#fadb14',
+      'Surface Restoration': '#fadb14', // Using a specific yellow for distinction
       'Restoration of Skid Resistance': token.colorSuccess,
       'Routine Maintenance': token.colorPrimary,
     };
-    const datasets = [];
-    // Use chartFilters.primaryYear instead of selectedYear
-    const primaryYear = chartFilters.primaryYear;
-    const summaryData = calculationResults.summary[primaryYear];
-  
-    if (summaryData) {
+
+    // Build dataset for the primary year
+    const primaryYearTotals = aggregateYearData(primaryYear);
+    if (primaryYearTotals.totalLength > 0 || primaryYearTotals.totalCost > 0) {
       const data = MAINTENANCE_CATEGORIES.map(cat => {
-        const categoryData = summaryData.by_category[cat];
+        const categoryData = primaryYearTotals.byCategory[cat];
         if (!categoryData) return 0;
-        // Use chartFilters.metric instead of viewMode
-        switch (chartFilters.metric) {
-          case 'length':
-            return categoryData.total_length_m / 1000; // km
-          case 'cost':
-            return categoryData.total_cost / 1e6; // millions
-          case 'percentage':
-            return categoryData.percentage;
-          default:
-            return 0;
+        switch (metric) {
+          case 'length': return categoryData.length / 1000; // km
+          case 'cost': return categoryData.cost / 1e6; // millions
+          case 'percentage': return primaryYearTotals.totalLength > 0 ? (categoryData.length / primaryYearTotals.totalLength) * 100 : 0;
+          default: return 0;
         }
       });
+
       datasets.push({
         label: primaryYear,
         data,
@@ -121,27 +150,24 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
         borderWidth: 1,
       });
     }
-  
-    // Add comparison data if enabled
-    if (chartFilters.isComparisonMode && chartFilters.compareYear) {
-      const compareData = calculationResults.summary[chartFilters.compareYear];
-      if (compareData) {
+
+    // Build dataset for the compare year if needed
+    if (isComparisonMode && compareYear) {
+      const compareYearTotals = aggregateYearData(compareYear);
+      if (compareYearTotals.totalLength > 0 || compareYearTotals.totalCost > 0) {
         const data = MAINTENANCE_CATEGORIES.map(cat => {
-          const categoryData = compareData.by_category[cat];
-          if (!categoryData) return 0;
-          switch (chartFilters.metric) {
-            case 'length':
-              return categoryData.total_length_m / 1000;
-            case 'cost':
-              return categoryData.total_cost / 1e6;
-            case 'percentage':
-              return categoryData.percentage;
-            default:
-              return 0;
+          const categoryData = compareYearTotals.byCategory[cat];
+           if (!categoryData) return 0;
+          switch (metric) {
+            case 'length': return categoryData.length / 1000; // km
+            case 'cost': return categoryData.cost / 1e6; // millions
+            case 'percentage': return compareYearTotals.totalLength > 0 ? (categoryData.length / compareYearTotals.totalLength) * 100 : 0;
+            default: return 0;
           }
         });
+
         datasets.push({
-          label: chartFilters.compareYear,
+          label: compareYear,
           data,
           backgroundColor: MAINTENANCE_CATEGORIES.map(cat => `${colors[cat]}80`), // Add transparency
           borderColor: MAINTENANCE_CATEGORIES.map(cat => colors[cat]),
@@ -149,7 +175,13 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
         });
       }
     }
+
     perfTimer.end('chartUpdate');
+
+    if (datasets.length === 0) {
+        return null;
+    }
+
     return {
       labels: MAINTENANCE_CATEGORIES.map(cat => {
         if (window.innerWidth < 768) {
@@ -159,7 +191,7 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
       }),
       datasets,
     };
-  }, [calculationResults, chartFilters, token]);
+  }, [calculationResults.segments, chartFilters, token, perfTimer]);
 
   // Chart options
   const options: ChartOptions<'bar'> = useMemo(() => {

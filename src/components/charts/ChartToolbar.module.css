@@ -5,6 +5,23 @@
   align-items: center;
   width: 100%;
   padding: 8px 0;
+  flex-wrap: nowrap; /* Add this line */
+  justify-content: flex-end; /* Add this line */
+  gap: 12px;
+}
+
+.toolbarControls {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px; /* Adjust gap as needed */
+  flex-shrink: 1;
+  min-width: 0; /* Allows the container to shrink below its content size */
+}
+
+.toolbarActions {
+  display: flex;
+  flex-shrink: 0; /* Prevents the action buttons from shrinking */
 }
 
 /* Metric Selector Styling */

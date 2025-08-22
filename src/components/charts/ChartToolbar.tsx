@@ -49,10 +49,9 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
   const setChartMetric = useAnalyticsStore((s) => s.setChartMetric);
   const setChartPrimaryYear = useAnalyticsStore((s) => s.setChartPrimaryYear);
   const setChartCompareYear = useAnalyticsStore((s) => s.setChartCompareYear);
-  const setChartCounties = useAnalyticsStore((s) => s.setChartCounties);
   const resetChartFilters = useAnalyticsStore((s) => s.resetChartFilters);
-  const selectedCounties = useAnalyticsStore((s) => s.parameters.selectedCounties); // Read from parameters
-  const setSelectedCounties = useAnalyticsStore((s) => s.setSelectedCounties); // Use the correct action
+  const { selectedCounties } = useAnalyticsStore((s) => s.chartFilters);
+  const setChartCounties = useAnalyticsStore((s) => s.setChartCounties);
 
   // Derive "has active filters" and a count locally (avoids external selectors)
   const { hasActiveFilters, activeFilterCount } = useMemo(() => {
@@ -162,9 +161,9 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
   const handleCountyChange = useCallback(
     (values: string[]) => {
       logger.action('changeCounties', { count: values.length, counties: values });
-      setSelectedCounties(values); // Use the correct setter
+      setChartCounties(values); // Use the chart filter setter
     },
-    [setSelectedCounties, logger]
+    [setChartCounties, logger]
   );
 
   const handleCopyLink = useCallback(() => {
@@ -194,10 +193,10 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
     (menu: React.ReactElement) => (
       <div className={styles.countyDropdown}>
         <div className={styles.dropdownHeader}>
-          <Button type="link" size="small" onClick={() => setSelectedCounties(availableCounties)}>
+          <Button type="link" size="small" onClick={() => setChartCounties(availableCounties)}>
             Select All
           </Button>
-          <Button type="link" size="small" onClick={() => setSelectedCounties([])}>
+          <Button type="link" size="small" onClick={() => setChartCounties([])}>
             Clear
           </Button>
           <Dropdown menu={{ items: presetMenuItems }} placement="bottomRight">
@@ -209,7 +208,7 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
         {menu}
       </div>
     ),
-    [availableCounties, presetMenuItems, setSelectedCounties]
+    [availableCounties, presetMenuItems, setChartCounties]
   );
 
   const maxTagCount = useMemo(() => {
@@ -219,7 +218,8 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
   }, [isMobile, isTablet]);
 
   return (
-    <Space wrap size="small" className={`${styles.toolbar} ${className || ''}`}>
+    <div className={`${styles.toolbar} ${className || ''}`}>
+      <div className={styles.toolbarControls}>
       {/* Metric */}
       <Segmented
         value={chartFilters.metric}
@@ -265,7 +265,7 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
         <Select
           mode="multiple"
           placeholder="All Counties"
-          value={selectedCounties}
+          value={chartFilters.selectedCounties}
           onChange={handleCountyChange}
           style={{ minWidth: isMobile ? 140 : 260 }}
           maxTagCount={maxTagCount}
@@ -289,7 +289,9 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
           ))}
         </Select>
       </Badge>
+      </div>
 
+      <div className={styles.toolbarActions}>
       {/* Actions */}
       <Space.Compact>
         <Tooltip title="Copy shareable link">
@@ -316,6 +318,7 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
           </Button>
         </Tooltip>
       </Space.Compact>
-    </Space>
+      </div>
+      </div>
   );
 };
