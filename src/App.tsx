@@ -1,8 +1,9 @@
+// src/App.tsx
 import './App.css';
 import { Dashboard } from '@/components/layout/Dashboard';
 import { ConfigProvider } from 'antd';
 import { logger } from '@/utils/logger';
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from '@/components/layout/Dashboard.module.css';
 
 import { KPISummary } from '@/components/common/KPISummary';
@@ -16,17 +17,22 @@ import { ThemeTokenBridge } from './theme/ThemeTokenBridge';
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('theme');
-    // Also check for user's system preference
     return saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
   const [selectedCategory, setSelectedCategory] = useState<MaintenanceCategory | null>(null);
   const [showDrillDown, setShowDrillDown] = useState(false);
+  
+  // State for both siders is now managed here
+  const [controlsSiderVisible, setControlsSiderVisible] = useState(false);
+  const [filterSiderVisible, setFilterSiderVisible] = useState(false);
+
+  const toggleControlsSider = () => setControlsSiderVisible(!controlsSiderVisible);
+  const toggleFilterSider = () => setFilterSiderVisible(!filterSiderVisible);
 
   useEffect(() => {
     logger.info('App', 'RMO Dashboard initialized', {
       viewport: `${window.innerWidth}x${window.innerHeight}`,
-      userAgent: navigator.userAgent,
       theme: isDarkMode ? 'dark' : 'light',
     });
   }, [isDarkMode]);
@@ -34,22 +40,26 @@ function App() {
   const handleThemeChange = (dark: boolean) => {
     setIsDarkMode(dark);
     localStorage.setItem('theme', dark ? 'dark' : 'light');
-    logger.userAction('themeToggle', { theme: dark ? 'dark' : 'light' });
   };
 
   return (
     <ConfigProvider
       theme={{
         ...(isDarkMode ? darkTheme : lightTheme),
-        /** Enable global CSS variables for theme tokens and disable hash scoping */
         cssVar: true,
         hashed: false,
       }}
     >
-      {/* Bridge component to expose design tokens as CSS variables */}
       <ThemeTokenBridge />
       <AuthWrapper>
-        <Dashboard onThemeChange={handleThemeChange} isDarkMode={isDarkMode}>
+        <Dashboard
+          onThemeChange={handleThemeChange}
+          isDarkMode={isDarkMode}
+          isControlsSiderVisible={controlsSiderVisible}
+          onToggleControlsSider={toggleControlsSider}
+          isFilterSiderVisible={filterSiderVisible}
+          onToggleFilterSider={toggleFilterSider}
+        >
           <div className={styles.kpiSection}>
             <KPISummary />
           </div>
@@ -64,17 +74,15 @@ function App() {
                 }}
                 onCountyClick={(county) => {
                   logger.userAction('countyDrillDown', { county });
-                  console.log('County clicked:', county);
                 }}
               />
             ) : (
               <MaintenanceCategoryChart
-                showComparison={true}
                 onCategoryClick={(category) => {
-                  logger.userAction('categoryDrillDown', { category });
                   setSelectedCategory(category);
                   setShowDrillDown(true);
                 }}
+                onOpenFilters={toggleFilterSider} // Pass the handler to the chart
               />
             )}
           </div>

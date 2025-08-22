@@ -52,13 +52,13 @@ const MAINTENANCE_CATEGORIES: MaintenanceCategory[] = [
 interface MaintenanceCategoryChartProps {
   height?: number;
   onCategoryClick?: (category: MaintenanceCategory) => void;
-  onOpenFilters?: () => void; // New prop to handle opening the filter sider
+  onOpenFilters?: () => void;
 }
 
 export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> = ({
   height = 400,
   onCategoryClick,
-  onOpenFilters, // Destructure the new prop
+  onOpenFilters,
 }) => {
   const logger = useComponentLogger('MaintenanceCategoryChart');
   const perfTimer = usePerformanceTimer('ChartRender');
@@ -125,12 +125,11 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
     const colors: Record<MaintenanceCategory, string> = {
       'Road Reconstruction': token.colorError,
       'Structural Overlay': token.colorWarning,
-      'Surface Restoration': '#fadb14', // Using a specific yellow for distinction
+      'Surface Restoration': '#fadb14',
       'Restoration of Skid Resistance': token.colorSuccess,
       'Routine Maintenance': token.colorPrimary,
     };
 
-    // Build dataset for the primary year
     const primaryYearTotals = aggregateYearData(primaryYear);
     if (primaryYearTotals.totalLength > 0 || primaryYearTotals.totalCost > 0) {
       const data = MAINTENANCE_CATEGORIES.map(cat => {
@@ -153,7 +152,6 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
       });
     }
 
-    // Build dataset for the compare year if needed
     if (isComparisonMode && compareYear) {
       const compareYearTotals = aggregateYearData(compareYear);
       if (compareYearTotals.totalLength > 0 || compareYearTotals.totalCost > 0) {
@@ -171,7 +169,7 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
         datasets.push({
           label: compareYear,
           data,
-          backgroundColor: MAINTENANCE_CATEGORIES.map(cat => `${colors[cat]}80`), // Add transparency
+          backgroundColor: MAINTENANCE_CATEGORIES.map(cat => `${colors[cat]}80`),
           borderColor: MAINTENANCE_CATEGORIES.map(cat => colors[cat]),
           borderWidth: 1,
         });
@@ -195,21 +193,21 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
     };
   }, [calculationResults.segments, chartFilters, token, perfTimer]);
 
-  // Chart options
   const options: ChartOptions<'bar'> = useMemo(() => {
-    const formatMetricValue = (value: number, context: Context | TooltipItem<'bar'>) => {
-      const label = context.dataset.label || '';
+    // This helper function centralizes the label formatting logic for both tooltips and datalabels.
+    const formatMetricValue = (value: number, context: Context | TooltipItem<'bar'>, forDatalabel: boolean) => {
+      const label = forDatalabel ? '' : `${context.dataset.label || ''}: `;
       const numericValue = 'parsed' in context ? context.parsed.y : value;
 
       switch (chartFilters.metric) {
         case 'length':
-          return `${label}: ${numericValue.toFixed(1)} km`;
+          return `${label}${numericValue.toFixed(1)} km`;
         case 'cost':
-          return `${label}: €${numericValue.toFixed(2)}M`;
+          return `${label}€${numericValue.toFixed(2)}M`;
         case 'percentage':
-          return `${label}: ${numericValue.toFixed(1)}%`;
+          return `${label}${numericValue.toFixed(1)}%`;
         default:
-          return `${label}: ${numericValue}`;
+          return `${label}${numericValue}`;
       }
     };
 
@@ -222,19 +220,17 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
           position: 'top' as const,
           labels: { color: token.colorTextSecondary },
         },
-        title: {
-          display: false,
-        },
+        title: { display: false },
         datalabels: {
           anchor: 'end',
           align: 'end',
           offset: 8,
-          formatter: (value: number, context: Context) => formatMetricValue(value, context),
+          formatter: (value: number, context: Context) => formatMetricValue(value, context, true), // Simplified for data label
           color: token.colorText,
         },
         tooltip: {
           callbacks: {
-            label: (context: TooltipItem<'bar'>) => formatMetricValue(0, context),
+            label: (context: TooltipItem<'bar'>) => formatMetricValue(0, context, false), // Full info for tooltip
           },
         },
       },
@@ -274,7 +270,6 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
   }, [chartFilters, onCategoryClick, token, logger]);
   
   const handleExport = () => {
-    logger.action('exportChart');
     if (chartRef.current) {
       const url = chartRef.current.toBase64Image();
       const link = document.createElement('a');
@@ -285,10 +280,7 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
   };
 
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const handleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-    logger.action('toggleFullscreen', { isFullscreen: !isFullscreen });
-  };
+  const handleFullscreen = () => setIsFullscreen(!isFullscreen);
   
   return (
     <motion.div
@@ -299,66 +291,38 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
       <Card
         className={`${styles.chartCard} ${isFullscreen ? styles.fullscreen : ''}`}
         title={
-          <div className={styles.chartHeader}>
-            <span className={styles.chartTitle}>
-              <BarChartOutlined /> Maintenance Categories
-            </span>
-          </div>
+          <span className={styles.chartTitle}>
+            <BarChartOutlined /> Maintenance Categories
+          </span>
         }
         extra={
           <ChartToolbar
             onExport={handleExport}
             onFullscreen={handleFullscreen}
             isFullscreen={isFullscreen}
-            onOpenFilters={onOpenFilters} // Pass the handler down
+            onOpenFilters={onOpenFilters}
           />
         }
       >
-        <ActiveFilterChips
-           className={styles.filterChips}
-          maxVisible={8}
-          showClearAll={true}
-        />
+        <ActiveFilterChips className={styles.filterChips} />
         <div className={styles.chartContainer} style={{ height: isFullscreen ? 'calc(100vh - 200px)' : height }}>
           {isLoading ? (
-            <div className={styles.loadingContainer}>
-              <Spin size="large" tip="Loading chart data..." />
-            </div>
+            <div className={styles.loadingContainer}><Spin size="large" tip="Loading chart data..." /></div>
           ) : chartData ? (
             <Bar ref={chartRef} options={options} data={chartData} />
           ) : (
-            <Empty
-              description="No calculation results available"
-              style={{ height }}
-            >
-              <Button type="primary" icon={<SyncOutlined />}>
-                Run Calculation
-              </Button>
+            <Empty description="No calculation results available" style={{ height }}>
+              <Button type="primary" icon={<SyncOutlined />}>Run Calculation</Button>
             </Empty>
           )}
         </div>
         {window.innerWidth < 768 && !isLoading && chartData && (
           <div className={styles.mobileLegend}>
-            <div className={styles.legendItem}>
-              <span className={styles.legendColor} style={{ background: token.colorError }} />
-              RR: Road Reconstruction
-            </div>
-            <div className={styles.legendItem}>
-              <span className={styles.legendColor} style={{ background: token.colorWarning }} />
-              SO: Structural Overlay
-            </div>
-            <div className={styles.legendItem}>
-              <span className={styles.legendColor} style={{ background: '#fadb14' }} />
-              SR: Surface Restoration
-            </div>
-            <div className={styles.legendItem}>
-              <span className={styles.legendColor} style={{ background: token.colorSuccess }} />
-              RS: Restoration of Skid
-            </div>
-            <div className={styles.legendItem}>
-              <span className={styles.legendColor} style={{ background: token.colorPrimary }} />
-              RM: Routine Maintenance
-            </div>
+            <div className={styles.legendItem}><span className={styles.legendColor} style={{ background: token.colorError }} />RR: Road Reconstruction</div>
+            <div className={styles.legendItem}><span className={styles.legendColor} style={{ background: token.colorWarning }} />SO: Structural Overlay</div>
+            <div className={styles.legendItem}><span className={styles.legendColor} style={{ background: '#fadb14' }} />SR: Surface Restoration</div>
+            <div className={styles.legendItem}><span className={styles.legendColor} style={{ background: token.colorSuccess }} />RS: Restoration of Skid</div>
+            <div className={styles.legendItem}><span className={styles.legendColor} style={{ background: token.colorPrimary }} />RM: Routine Maintenance</div>
           </div>
         )}
       </Card>

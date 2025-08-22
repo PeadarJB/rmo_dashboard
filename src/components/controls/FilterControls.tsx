@@ -42,24 +42,15 @@ export const FilterControls: React.FC<FilterControlsProps> = React.memo(
   ({ onExport, onCopyLink }) => {
     const logger = useComponentLogger('FilterControls');
 
-    // State selectors from Zustand store
-    const {
-      chartFilters,
-      summaryData,
-      setChartMetric,
-      setChartPrimaryYear,
-      setChartCompareYear,
-      resetChartFilters,
-      setChartCounties,
-    } = useAnalyticsStore((s) => ({
-      chartFilters: s.chartFilters,
-      summaryData: s.data.summaryData,
-      setChartMetric: s.setChartMetric,
-      setChartPrimaryYear: s.setChartPrimaryYear,
-      setChartCompareYear: s.setChartCompareYear,
-      resetChartFilters: s.resetChartFilters,
-      setChartCounties: s.setChartCounties,
-    }));
+    // --- FIX START: Use individual selectors to prevent re-render loops ---
+    const chartFilters = useAnalyticsStore((s) => s.chartFilters);
+    const summaryData = useAnalyticsStore((s) => s.data.summaryData);
+    const setChartMetric = useAnalyticsStore((s) => s.setChartMetric);
+    const setChartPrimaryYear = useAnalyticsStore((s) => s.setChartPrimaryYear);
+    const setChartCompareYear = useAnalyticsStore((s) => s.setChartCompareYear);
+    const resetChartFilters = useAnalyticsStore((s) => s.resetChartFilters);
+    const setChartCounties = useAnalyticsStore((s) => s.setChartCounties);
+    // --- FIX END ---
 
     // Memoized values
     const { hasActiveFilters, activeFilterCount } = useMemo(() => {

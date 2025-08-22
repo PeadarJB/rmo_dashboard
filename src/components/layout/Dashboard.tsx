@@ -1,10 +1,10 @@
 // src/components/layout/Dashboard.tsx
-import React, { useState } from 'react';
+import React from 'react';
 import { Layout, theme } from 'antd';
 import styles from './Dashboard.module.css';
 import { Header } from './Header';
-import { ControlsSider, FilterSider } from './'; // Updated import
-import { FilterControls } from '@/components/controls'; // Import FilterControls
+import { ControlsSider, FilterSider } from './';
+import { FilterControls } from '@/components/controls';
 import { useRecalculationManager } from '@/hooks/useRecalculationManager';
 
 const { Content } = Layout;
@@ -13,33 +13,32 @@ interface DashboardProps {
   children?: React.ReactNode;
   onThemeChange?: (isDark: boolean) => void;
   isDarkMode?: boolean;
+  // Props to control siders from the parent component (App.tsx)
+  isControlsSiderVisible: boolean;
+  onToggleControlsSider: () => void;
+  isFilterSiderVisible: boolean;
+  onToggleFilterSider: () => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
   children,
   onThemeChange,
   isDarkMode = false,
+  isControlsSiderVisible,
+  onToggleControlsSider,
+  isFilterSiderVisible,
+  onToggleFilterSider,
 }) => {
   const { token } = theme.useToken();
-  const [controlsSiderVisible, setControlsSiderVisible] = useState(false);
-  const [filterSiderVisible, setFilterSiderVisible] = useState(false); // New state for filter sider
   useRecalculationManager();
-
-  const toggleControlsSider = () => {
-    setControlsSiderVisible(!controlsSiderVisible);
-  };
-
-  const toggleFilterSider = () => {
-    setFilterSiderVisible(!filterSiderVisible);
-  };
 
   return (
     <div className={styles.appWrapper}>
       {/* Parameter Controls Sider (Left) */}
-      <ControlsSider isVisible={controlsSiderVisible} onClose={toggleControlsSider} />
+      <ControlsSider isVisible={isControlsSiderVisible} onClose={onToggleControlsSider} />
 
       {/* Filter & Display Sider (Right) */}
-      <FilterSider isVisible={filterSiderVisible} onClose={toggleFilterSider}>
+      <FilterSider isVisible={isFilterSiderVisible} onClose={onToggleFilterSider}>
         <FilterControls />
       </FilterSider>
 
@@ -51,9 +50,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <Header
             onThemeChange={onThemeChange}
             isDarkMode={isDarkMode}
-            onMenuClick={toggleControlsSider} // This controls the left sider
-            isSiderVisible={controlsSiderVisible}
-            // onFilterClick will be added in a later step
+            onMenuClick={onToggleControlsSider} // Controls the left sider
+            isSiderVisible={isControlsSiderVisible}
+            onFilterClick={onToggleFilterSider} // Controls the right sider
           />
         </Layout.Header>
 
