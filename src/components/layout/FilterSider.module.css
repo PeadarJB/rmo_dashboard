@@ -1,0 +1,67 @@
+/* src/components/layout/FilterSider.module.css */
+
+.siderContainer {
+  position: fixed;
+  top: 0;
+  right: 0; /* Changed from left to right */
+  bottom: 0;
+  width: 90vw; /* Use viewport width for better mobile experience */
+  max-width: 400px; /* Max width for tablets/desktops */
+  z-index: 1001; /* Higher than header to overlap */
+  
+  background-color: color-mix(in srgb, var(--ant-color-bg-container) 70%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  
+  border-left: 1px solid var(--ant-color-border-secondary); /* Changed from border-right */
+  box-shadow: -2px 0 15px rgba(0, 0, 0, 0.1); /* Shadow on the left */
+  
+  display: flex;
+  flex-direction: column;
+}
+
+.siderHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ant-color-border-secondary);
+  flex-shrink: 0;
+}
+
+.siderHeader h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ant-color-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.siderContent {
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px; /* Increased gap for better separation of controls */
+  height: 100%;
+}
+
+/* Custom scrollbar styling */
+.siderContent::-webkit-scrollbar {
+  width: 8px;
+}
+
+.siderContent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.siderContent::-webkit-scrollbar-thumb {
+  background: var(--ant-color-fill-secondary);
+  border-radius: 4px;
+}
+
+.siderContent::-webkit-scrollbar-thumb:hover {
+  background: var(--ant-color-fill);
+}
