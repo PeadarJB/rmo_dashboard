@@ -52,11 +52,13 @@ const MAINTENANCE_CATEGORIES: MaintenanceCategory[] = [
 interface MaintenanceCategoryChartProps {
   height?: number;
   onCategoryClick?: (category: MaintenanceCategory) => void;
+  onOpenFilters?: () => void; // New prop to handle opening the filter sider
 }
 
 export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> = ({
   height = 400,
   onCategoryClick,
+  onOpenFilters, // Destructure the new prop
 }) => {
   const logger = useComponentLogger('MaintenanceCategoryChart');
   const perfTimer = usePerformanceTimer('ChartRender');
@@ -195,10 +197,8 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
 
   // Chart options
   const options: ChartOptions<'bar'> = useMemo(() => {
-    // This helper function centralizes the label formatting logic for both tooltips and datalabels.
     const formatMetricValue = (value: number, context: Context | TooltipItem<'bar'>) => {
       const label = context.dataset.label || '';
-      // For tooltips, the value is in `context.parsed.y`. For datalabels, it's the `value` argument.
       const numericValue = 'parsed' in context ? context.parsed.y : value;
 
       switch (chartFilters.metric) {
@@ -310,10 +310,10 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
             onExport={handleExport}
             onFullscreen={handleFullscreen}
             isFullscreen={isFullscreen}
+            onOpenFilters={onOpenFilters} // Pass the handler down
           />
         }
       >
-        {/* Active filter chips */}
         <ActiveFilterChips
            className={styles.filterChips}
           maxVisible={8}
@@ -337,7 +337,6 @@ export const MaintenanceCategoryChart: React.FC<MaintenanceCategoryChartProps> =
             </Empty>
           )}
         </div>
-        {/* Mobile legend - update to use chartFilters */}
         {window.innerWidth < 768 && !isLoading && chartData && (
           <div className={styles.mobileLegend}>
             <div className={styles.legendItem}>
