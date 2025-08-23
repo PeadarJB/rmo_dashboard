@@ -10,17 +10,17 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useComponentLogger } from '@/utils/logger';
 import styles from './KPICard.module.css';
+import type { TrendComparison } from '@/types/ui';
+import type { SurveyYear } from '@/types/data';
 
 export interface KPICardProps {
   title: string;
+  primaryYear: SurveyYear;
   value: number | string;
   prefix?: string;
   suffix?: string;
   precision?: number;
-  trend?: {
-    value: number;
-    isPositive: boolean;
-  };
+  trends?: TrendComparison[];
   loading?: boolean;
   description?: string;
   formatter?: (value: number | string) => string;
@@ -31,11 +31,12 @@ export interface KPICardProps {
 
 export const KPICard: React.FC<KPICardProps> = ({
   title,
+  primaryYear,
   value,
   prefix,
   suffix,
   precision = 0,
-  trend,
+  trends,
   loading = false,
   description,
   formatter,
@@ -50,7 +51,7 @@ export const KPICard: React.FC<KPICardProps> = ({
   useEffect(() => {
     logger.mount({ title, value });
     return () => logger.unmount();
-  }, []);
+  }, [title, value, logger]);
 
   useEffect(() => {
     if (value !== displayValue) {
@@ -58,15 +59,15 @@ export const KPICard: React.FC<KPICardProps> = ({
       const timer = setTimeout(() => {
         setDisplayValue(value);
         setIsAnimating(false);
-        logger.action('valueUpdate', { 
-          title, 
-          oldValue: displayValue, 
-          newValue: value 
+        logger.action('valueUpdate', {
+          title,
+          oldValue: displayValue,
+          newValue: value,
         });
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [value]);
+  }, [value, displayValue, title, logger]);
 
   const handleClick = () => {
     if (onClick) {
@@ -77,18 +78,25 @@ export const KPICard: React.FC<KPICardProps> = ({
 
   const getColorClass = () => {
     switch (color) {
-      case 'success': return styles.success;
-      case 'warning': return styles.warning;
-      case 'error': return styles.error;
-      default: return styles.default;
+      case 'success':
+        return styles.success;
+      case 'warning':
+        return styles.warning;
+      case 'error':
+        return styles.error;
+      default:
+        return styles.default;
     }
   };
 
   const getSizeClass = () => {
     switch (size) {
-      case 'small': return styles.small;
-      case 'large': return styles.large;
-      default: return styles.medium;
+      case 'small':
+        return styles.small;
+      case 'large':
+        return styles.large;
+      default:
+        return styles.medium;
     }
   };
 
@@ -119,7 +127,9 @@ export const KPICard: React.FC<KPICardProps> = ({
         loading={loading}
       >
         <div className={styles.header}>
-          <span className={styles.title}>{title}</span>
+          <span className={styles.title}>
+            {title} ({primaryYear})
+          </span>
           {description && (
             <Tooltip title={description}>
               <InfoCircleOutlined className={styles.infoIcon} />
@@ -138,7 +148,9 @@ export const KPICard: React.FC<KPICardProps> = ({
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ duration: 0.2 }}
-                className={`${styles.value} ${isAnimating ? styles.animating : ''}`}
+                className={`${styles.value} ${
+                  isAnimating ? styles.animating : ''
+                }`}
               >
                 {prefix && <span className={styles.prefix}>{prefix}</span>}
                 <span className={styles.number}>{formatValue()}</span>
@@ -148,15 +160,26 @@ export const KPICard: React.FC<KPICardProps> = ({
           </AnimatePresence>
         </div>
 
-        {trend && !loading && (
-          <div className={styles.trend}>
-            <span className={trend.isPositive ? styles.trendUp : styles.trendDown}>
-              {trend.isPositive ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
-              <span className={styles.trendValue}>
-                {Math.abs(trend.value).toFixed(1)}%
-              </span>
-            </span>
-            <span className={styles.trendLabel}>vs previous</span>
+        {trends && trends.length > 0 && !loading && (
+          <div className={styles.trendTicker}>
+            {trends.map((trend) => (
+              <div key={trend.year} className={styles.tickerItem}>
+                <span className={styles.tickerYear}>vs {trend.year}</span>
+                <span
+                  className={`${styles.tickerValue} ${
+                    trend.direction === 'up'
+                      ? styles.tickerUp
+                      : trend.direction === 'down'
+                      ? styles.tickerDown
+                      : styles.tickerNeutral
+                  }`}
+                >
+                  {trend.direction === 'up' && <ArrowUpOutlined />}
+                  {trend.direction === 'down' && <ArrowDownOutlined />}
+                  {trend.percentChange.toFixed(1)}%
+                </span>
+              </div>
+            ))}
           </div>
         )}
       </Card>

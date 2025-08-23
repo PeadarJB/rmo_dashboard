@@ -15,8 +15,11 @@
   left: 0;
   right: 0;
   height: 4px;
-  /* Use theme tokens for gradient instead of hard-coded colors */
-  background: linear-gradient(90deg, var(--ant-color-primary) 0%, var(--ant-color-success) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--ant-color-primary) 0%,
+    var(--ant-color-success) 100%
+  );
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -57,7 +60,6 @@
 }
 
 .infoIcon:hover {
-  /* Use primary color token for hover state */
   color: var(--ant-color-primary);
 }
 
@@ -94,7 +96,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
   }
   50% {
@@ -107,40 +110,47 @@
   color: var(--ant-color-primary);
 }
 
-/* Trend */
-.trend {
+/* Trend Ticker Styles */
+.trendTicker {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 16px; /* Space between tickers */
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid var(--ant-color-border-secondary);
 }
 
-.trendUp,
-.trendDown {
+.tickerItem {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  font-size: 14px;
+  gap: 2px;
+}
+
+.tickerYear {
+  font-size: 11px;
+  color: var(--ant-color-text-tertiary);
   font-weight: 500;
 }
 
-.trendUp {
-  color: var(--ant-color-success);
-}
-
-.trendDown {
-  color: var(--ant-color-error);
-}
-
-.trendValue {
+.tickerValue {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
   font-weight: 600;
 }
 
-.trendLabel {
-  font-size: 12px;
-  color: var(--ant-color-text-tertiary);
+.tickerUp {
+  color: var(--ant-color-success-text);
+}
+
+.tickerDown {
+  color: var(--ant-color-error-text);
+}
+
+.tickerNeutral {
+  color: var(--ant-color-text-secondary);
 }
 
 /* Color variants */
@@ -188,15 +198,15 @@
   .kpiCard {
     min-height: 100px;
   }
-  
+
   .number {
     font-size: 28px;
   }
-  
+
   .small .number {
     font-size: 20px;
   }
-  
+
   .large .number {
     font-size: 36px;
   }
