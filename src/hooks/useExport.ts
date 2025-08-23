@@ -31,14 +31,18 @@ export function useExport(options: UseExportOptions = {}) {
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [exportProgress, setExportProgress] = useState(0);
+  
+  // Select individual state slices to prevent re-renders from creating new objects.
+  // This fixes the "getSnapshot should be cached" warning and the resulting infinite loop.
+  const cache = useAnalyticsStore(state => state.cache);
+  const parameters = useAnalyticsStore(state => state.parameters);
+  const chartFilters = useAnalyticsStore(state => state.chartFilters);
+  const data = useAnalyticsStore(state => state.data);
 
-  // Store selectors - get all needed data in one go
-  const storeData = useAnalyticsStore(state => ({
-    cache: state.cache,
-    parameters: state.parameters,
-    chartFilters: state.chartFilters,
-    data: state.data,
-  }));
+  // Re-assemble the data object needed by the export services, memoized for stability.
+  const storeData = useMemo(() => ({
+    cache, parameters, chartFilters, data
+  }), [cache, parameters, chartFilters, data]);
 
   // Check if export is available
   const canExport = useMemo(() => {
@@ -130,7 +134,7 @@ export function useExport(options: UseExportOptions = {}) {
 
       // Execute export
       const result = await exportReport(
-        storeData,
+        reportData,
         exportOptions,
         (progress) => {
           setExportProgress(progress.percentage);
@@ -227,7 +231,7 @@ export function useExport(options: UseExportOptions = {}) {
 
       // Execute export
       const result = await exportReport(
-        storeData,
+        reportData,
         exportOptions,
         (progress) => {
           setExportProgress(progress.percentage);

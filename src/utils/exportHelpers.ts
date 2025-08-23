@@ -7,20 +7,10 @@ import type {
   ExportOptions,
   ExportResult,
   ExportProgressCallback,
-  ReportMetadata,
-  ExportCategoryData,
-  ExportCountyData,
   CSVRow,
 } from '@/types/export';
-import type {
-  CalculatedRoadSegment,
-  MaintenanceCategory
-} from '@/types/calculations';
-import type { SurveyYear } from '@/types/data';
-import type { AnalyticsState } from '@/types/store';
-import { COUNTY_NAMES } from '@/utils/countyLabels';
 
-// Constants
+// Constants for PDF generation
 const PDF_MARGINS = { top: 20, left: 20, right: 20, bottom: 30 };
 const PDF_COLORS = {
   primary: '#1890ff',
@@ -30,181 +20,6 @@ const PDF_COLORS = {
   text: '#262626',
   lightGray: '#f0f0f0',
 };
-
-/**
- * Prepare export data from current store state
- */
-export function prepareExportData(
-  state: Pick<AnalyticsState, 'cache' | 'parameters' | 'chartFilters' | 'data'>,
-  options: ExportOptions
-): ExportData | null {
-  const { cache, parameters, chartFilters } = state;
-
-  if (!cache.results.segments || !cache.results.summary) {
-    console.error('No calculation results available for export');
-    return null;
-  }
-
-  const primaryYear = chartFilters.primaryYear;
-  const yearSummary = cache.results.summary[primaryYear];
-
-  if (!yearSummary) {
-    console.error(`No data available for year ${primaryYear}`);
-    return null;
-  }
-
-  // Build metadata
-  const metadata: ReportMetadata = {
-    generatedAt: new Date().toISOString(),
-    generatedBy: 'RMO Dashboard User',
-    reportTitle: `Regional Road Maintenance Analysis - ${primaryYear}`,
-    reportPeriod: `Survey Year ${primaryYear}`,
-    dataSource: 'Regional Road Survey Data',
-    filters: {
-      year: parameters.selectedYear,
-      counties: chartFilters.selectedCounties,
-      comparisonYear: chartFilters.compareYear,
-    },
-    parameters: {
-      thresholds: parameters.thresholds,
-      costs: parameters.costs,
-    },
-    recordCount: yearSummary.total_segments,
-    totalNetworkLength: yearSummary.total_length_m,
-    totalCost: yearSummary.total_cost,
-  };
-
-  // Build KPIs
-  const kpis = [
-    {
-      name: 'Total Maintenance Cost',
-      value: yearSummary.total_cost,
-      unit: '€',
-      formatted: formatCurrency(yearSummary.total_cost),
-    },
-    {
-      name: 'Network Length',
-      value: yearSummary.total_length_m / 1000,
-      unit: 'km',
-      formatted: `${(yearSummary.total_length_m / 1000).toFixed(0)} km`,
-    },
-    {
-      name: 'Total Segments',
-      value: yearSummary.total_segments,
-      unit: 'segments',
-      formatted: yearSummary.total_segments.toLocaleString(),
-    },
-    {
-      name: 'Average Cost per km',
-      value: yearSummary.total_cost / (yearSummary.total_length_m / 1000),
-      unit: '€/km',
-      formatted: formatCurrency(yearSummary.total_cost / (yearSummary.total_length_m / 1000)),
-    },
-  ];
-
-  // Build category analysis
-  const categoryAnalysis: ExportCategoryData[] = Object.entries(yearSummary.by_category)
-    .map(([category, data]) => ({
-      category: category as MaintenanceCategory,
-      segments: data.segment_count,
-      lengthKm: data.total_length_m / 1000,
-      cost: data.total_cost,
-      percentage: data.percentage,
-    }))
-    .sort((a, b) => b.cost - a.cost);
-
-  // Build county analysis
-  const countyAnalysis: ExportCountyData[] = [];
-
-  // Filter segments by selected counties if needed
-  let exportSegments = cache.results.segments;
-  if (chartFilters.selectedCounties.length > 0) {
-    exportSegments = exportSegments.filter(s =>
-      chartFilters.selectedCounties.includes(s.county)
-    );
-  }
-
-  // Aggregate by county
-  const countyMap = new Map<string, ExportCountyData>();
-
-  for (const segment of exportSegments) {
-    const yearData = segment.data[primaryYear];
-    if (!yearData) continue;
-
-    if (!countyMap.has(segment.county)) {
-      countyMap.set(segment.county, {
-        code: segment.county,
-        name: COUNTY_NAMES[segment.county] || segment.county,
-        totalSegments: 0,
-        totalLengthKm: 0,
-        totalCost: 0,
-        byCategory: {} as any,
-      });
-    }
-
-    const county = countyMap.get(segment.county)!;
-    county.totalSegments++;
-    county.totalLengthKm += 0.1; // 100m segments
-    county.totalCost += yearData.cost;
-
-    // Initialize category if needed
-    if (!county.byCategory[yearData.category]) {
-      county.byCategory[yearData.category] = {
-        segments: 0,
-        lengthKm: 0,
-        cost: 0,
-      };
-    }
-
-    county.byCategory[yearData.category].segments++;
-    county.byCategory[yearData.category].lengthKm += 0.1;
-    county.byCategory[yearData.category].cost += yearData.cost;
-  }
-
-  countyAnalysis.push(...Array.from(countyMap.values()));
-  countyAnalysis.sort((a, b) => b.totalCost - a.totalCost);
-
-  // Build final export data
-  const exportData: ExportData = {
-    metadata,
-    kpis,
-    summary: {
-      year: primaryYear,
-      totalSegments: yearSummary.total_segments,
-      totalLength: yearSummary.total_length_m,
-      totalCost: yearSummary.total_cost,
-      averageCondition: calculateAverageCondition(exportSegments, primaryYear),
-    },
-    categoryAnalysis,
-    countyAnalysis,
-  };
-
-  // Add detailed segments if requested
-  if (options.sections.detailedSegments) {
-    exportData.segments = exportSegments;
-  }
-
-  // Add comparison data if available
-  if (chartFilters.compareYear && cache.results.summary[chartFilters.compareYear]) {
-    const compareYear = chartFilters.compareYear;
-    const compareSummary = cache.results.summary[compareYear];
-
-    exportData.comparisonData = {
-      year: compareYear,
-      summary: compareSummary as any, // FIX: Type definition expects CalculationSummary but provides YearSummary
-      categoryAnalysis: Object.entries(compareSummary.by_category)
-        .map(([category, data]) => ({
-          category: category as MaintenanceCategory,
-          segments: data.segment_count,
-          lengthKm: data.total_length_m / 1000,
-          cost: data.total_cost,
-          percentage: data.percentage,
-        })),
-    };
-  }
-
-  return exportData;
-}
 
 /**
  * Generate CSV from export data
@@ -634,32 +449,6 @@ function formatCurrency(value: number): string {
   return `€${value.toFixed(2)}`;
 }
 
-function calculateAverageCondition(
-  segments: CalculatedRoadSegment[],
-  year: SurveyYear
-): number {
-  const weights = {
-    'Routine Maintenance': 100,
-    'Restoration of Skid Resistance': 80,
-    'Surface Restoration': 60,
-    'Structural Overlay': 40,
-    'Road Reconstruction': 20,
-  };
-
-  let totalScore = 0;
-  let totalCount = 0;
-
-  for (const segment of segments) {
-    const yearData = segment.data[year];
-    if (yearData && yearData.category) {
-      totalScore += weights[yearData.category] || 0;
-      totalCount++;
-    }
-  }
-
-  return totalCount > 0 ? totalScore / totalCount : 0;
-}
-
 function addSectionTitle(doc: jsPDF, title: string, y: number): void {
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
@@ -671,7 +460,7 @@ function addSectionTitle(doc: jsPDF, title: string, y: number): void {
 
 // Main export function that combines everything
 export async function exportReport(
-  state: Pick<AnalyticsState, 'cache' | 'parameters' | 'chartFilters' | 'data'>,
+  exportData: ExportData,
   options: ExportOptions,
   onProgress?: ExportProgressCallback
 ): Promise<ExportResult> {
@@ -682,8 +471,7 @@ export async function exportReport(
       message: 'Preparing export data...',
     });
 
-    // Prepare the data
-    const exportData = prepareExportData(state, options);
+    // Data is now pre-prepared and passed in
     if (!exportData) {
       throw new Error('Failed to prepare export data');
     }
