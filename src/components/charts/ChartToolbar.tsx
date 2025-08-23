@@ -140,14 +140,14 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
       key: 'csv',
       icon: <FileExcelOutlined />,
       label: 'Export Data (CSV)',
-      onClick: exportCSV,
+      onClick: () => exportCSV(),
       disabled: !canExport || isExporting,
     },
     {
       key: 'pdf',
       icon: <FilePdfOutlined />,
       label: 'Export Report (PDF)',
-      onClick: exportPDF,
+      onClick: () => exportPDF(),
       disabled: !canExport || isExporting,
     },
   ];

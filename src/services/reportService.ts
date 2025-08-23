@@ -1,7 +1,6 @@
 // src/services/reportService.ts
 import type {
   ExportData,
-  ExportOptions,
   ReportMetadata,
   ExportKPI,
   ExportCategoryData,
@@ -43,10 +42,10 @@ export class ReportService {
    */
   async gatherReportData(
     sources: ReportDataSources,
-    options: ReportOptions = { 
-      includeFiltered: true, 
+    options: ReportOptions = {
+      includeFiltered: true,
       includeComparison: true,
-      includeParameters: true 
+      includeParameters: true
     }
   ): Promise<ExportData | null> {
     // Validate data availability
@@ -167,7 +166,7 @@ export class ReportService {
       filtered.sort((a, b) => {
         const aName = COUNTY_NAMES[a.county] || a.county;
         const bName = COUNTY_NAMES[b.county] || b.county;
-        return filters.sortOrder === 'asc' 
+        return filters.sortOrder === 'asc'
           ? aName.localeCompare(bName)
           : bName.localeCompare(aName);
       });
@@ -176,7 +175,7 @@ export class ReportService {
       filtered.sort((a, b) => {
         const aCost = a.data[filters.primaryYear]?.cost || 0;
         const bCost = b.data[filters.primaryYear]?.cost || 0;
-        return filters.sortOrder === 'asc' 
+        return filters.sortOrder === 'asc'
           ? aCost - bCost
           : bCost - aCost;
       });
@@ -213,8 +212,8 @@ export class ReportService {
       }
     });
 
-    const averageCondition = validSegments > 0 
-      ? totalConditionScore / validSegments 
+    const averageCondition = validSegments > 0
+      ? totalConditionScore / validSegments
       : 0;
 
     return {
@@ -235,7 +234,7 @@ export class ReportService {
     yearSummary: any
   ): ReportMetadata {
     const now = new Date();
-    
+
     return {
       generatedAt: now.toISOString(),
       generatedBy: 'RMO Dashboard User',
@@ -262,7 +261,7 @@ export class ReportService {
    */
   private calculateKPIs(
     yearSummary: any,
-    segments: CalculatedRoadSegment[],
+    _segments: CalculatedRoadSegment[],
     primaryYear: SurveyYear,
     fullSummary: CalculationSummary | null
   ): ExportKPI[] {
@@ -313,17 +312,17 @@ export class ReportService {
 
     // Add trends if we have comparison data
     if (fullSummary) {
-      const previousYear = primaryYear === '2018' ? '2011' : 
+      const previousYear = primaryYear === '2018' ? '2011' :
                           primaryYear === '2025' ? '2018' : null;
-      
+
       if (previousYear && fullSummary[previousYear]) {
         const prevSummary = fullSummary[previousYear];
-        
+
         // Add trend to cost KPI
         if (prevSummary.total_cost > 0) {
           const costChange = yearSummary.total_cost - prevSummary.total_cost;
           const costChangePercent = (costChange / prevSummary.total_cost) * 100;
-          
+
           kpis[0].trend = {
             previousYear,
             change: costChange,
@@ -335,7 +334,7 @@ export class ReportService {
         if (prevSummary.total_length_m > 0) {
           const lengthChange = yearSummary.total_length_m - prevSummary.total_length_m;
           const lengthChangePercent = (lengthChange / prevSummary.total_length_m) * 100;
-          
+
           kpis[1].trend = {
             previousYear,
             change: lengthChange / 1000, // Convert to km
@@ -471,7 +470,11 @@ export class ReportService {
 
     return {
       year: compareYear,
-      summary: yearSummary,
+      // HACK: The type definition for ExportData.comparisonData.summary is incorrect.
+      // It expects a full CalculationSummary, but it should be a YearSummary for the
+      // specific comparison year. Using `as any` to bypass this, matching the
+      // workaround used in `exportHelpers.ts`.
+      summary: yearSummary as any,
       categoryAnalysis,
     };
   }
@@ -495,13 +498,13 @@ export class ReportService {
     includeTimestamp: boolean = true
   ): string {
     const parts = ['RMO'];
-    
+
     // Add report type
     parts.push('Report');
-    
+
     // Add year
     parts.push(filters.primaryYear);
-    
+
     // Add filter indicator
     if (filters.selectedCounties.length > 0) {
       if (filters.selectedCounties.length === 1) {
@@ -510,12 +513,12 @@ export class ReportService {
         parts.push(`${filters.selectedCounties.length}Counties`);
       }
     }
-    
+
     // Add comparison indicator
     if (filters.compareYear) {
       parts.push(`vs${filters.compareYear}`);
     }
-    
+
     // Add timestamp
     if (includeTimestamp) {
       const timestamp = new Date().toISOString()
@@ -523,7 +526,7 @@ export class ReportService {
         .slice(0, -5);
       parts.push(timestamp);
     }
-    
+
     return `${parts.join('_')}.${format}`;
   }
 

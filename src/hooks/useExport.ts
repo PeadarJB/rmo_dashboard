@@ -3,9 +3,9 @@ import { useState, useCallback, useMemo } from 'react';
 import { message } from 'antd';
 import { useAnalyticsStore } from '@/store/useAnalyticsStore';
 import { reportService, type ReportOptions } from '@/services/reportService';
-import { exportReport, type ExportOptions, type ExportResult } from '@/utils/exportHelpers';
+import { exportReport } from '@/utils/exportHelpers';
 import { useComponentLogger } from '@/utils/logger';
-import type { ExportFormat, ExportSections } from '@/types/export';
+import type { ExportFormat, ExportSections, ExportResult, ExportOptions } from '@/types/export';
 
 export interface UseExportOptions {
   showNotifications?: boolean;
@@ -24,7 +24,6 @@ export function useExport(options: UseExportOptions = {}) {
   const logger = useComponentLogger('useExport');
   const {
     showNotifications = true,
-    autoDownload = true,
     maxSegments = 10000,
   } = options;
 
@@ -136,9 +135,9 @@ export function useExport(options: UseExportOptions = {}) {
         (progress) => {
           setExportProgress(progress.percentage);
           if (showNotifications && progress.stage === 'complete') {
-            message.success({ 
-              content: 'PDF report generated successfully', 
-              key: 'export' 
+            message.success({
+              content: 'PDF report generated successfully',
+              key: 'export'
             });
           }
         }
@@ -150,15 +149,15 @@ export function useExport(options: UseExportOptions = {}) {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'PDF export failed';
       setExportError(errorMessage);
-      logger.error('exportPDF', errorMessage);
-      
+
+
       if (showNotifications) {
-        message.error({ 
-          content: `Export failed: ${errorMessage}`, 
-          key: 'export' 
+        message.error({
+          content: `Export failed: ${errorMessage}`,
+          key: 'export'
         });
       }
-      
+
       return {
         success: false,
         fileName: '',
@@ -233,9 +232,9 @@ export function useExport(options: UseExportOptions = {}) {
         (progress) => {
           setExportProgress(progress.percentage);
           if (showNotifications && progress.stage === 'complete') {
-            message.success({ 
-              content: 'CSV file generated successfully', 
-              key: 'export' 
+            message.success({
+              content: 'CSV file generated successfully',
+              key: 'export'
             });
           }
         }
@@ -247,15 +246,15 @@ export function useExport(options: UseExportOptions = {}) {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'CSV export failed';
       setExportError(errorMessage);
-      logger.error('exportCSV', errorMessage);
-      
+
+
       if (showNotifications) {
-        message.error({ 
-          content: `Export failed: ${errorMessage}`, 
-          key: 'export' 
+        message.error({
+          content: `Export failed: ${errorMessage}`,
+          key: 'export'
         });
       }
-      
+
       return {
         success: false,
         fileName: '',
@@ -280,7 +279,7 @@ export function useExport(options: UseExportOptions = {}) {
     try {
       // Dynamically import html2canvas to reduce bundle size
       const html2canvas = (await import('html2canvas')).default;
-      
+
       if (showNotifications) {
         message.loading({ content: 'Capturing chart...', key: 'export' });
       }
@@ -303,9 +302,9 @@ export function useExport(options: UseExportOptions = {}) {
         URL.revokeObjectURL(url);
 
         if (showNotifications) {
-          message.success({ 
-            content: 'Chart exported successfully', 
-            key: 'export' 
+          message.success({
+            content: 'Chart exported successfully',
+            key: 'export'
           });
         }
       }, 'image/png');
@@ -318,15 +317,14 @@ export function useExport(options: UseExportOptions = {}) {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Chart export failed';
       setExportError(errorMessage);
-      logger.error('exportChartImage', errorMessage);
-      
+
       if (showNotifications) {
-        message.error({ 
-          content: `Export failed: ${errorMessage}`, 
-          key: 'export' 
+        message.error({
+          content: `Export failed: ${errorMessage}`,
+          key: 'export'
         });
       }
-      
+
       return {
         success: false,
         fileName: '',
@@ -379,7 +377,7 @@ export function useExport(options: UseExportOptions = {}) {
     quickExportPDF,
     quickExportCSV,
     clearError,
-    
+
     // State
     isExporting,
     exportError,

@@ -6,18 +6,15 @@ import type {
   ExportData,
   ExportOptions,
   ExportResult,
-  CSVExportConfig,
-  PDFExportConfig,
   ExportProgressCallback,
   ReportMetadata,
   ExportCategoryData,
   ExportCountyData,
   CSVRow,
 } from '@/types/export';
-import type { 
+import type {
   CalculatedRoadSegment,
-  CalculationSummary,
-  MaintenanceCategory 
+  MaintenanceCategory
 } from '@/types/calculations';
 import type { SurveyYear } from '@/types/data';
 import type { AnalyticsState } from '@/types/store';
@@ -34,14 +31,6 @@ const PDF_COLORS = {
   lightGray: '#f0f0f0',
 };
 
-const CATEGORY_COLORS: Record<MaintenanceCategory, string> = {
-  'Road Reconstruction': '#ff4d4f',
-  'Structural Overlay': '#fa8c16',
-  'Surface Restoration': '#fadb14',
-  'Restoration of Skid Resistance': '#52c41a',
-  'Routine Maintenance': '#1890ff',
-};
-
 /**
  * Prepare export data from current store state
  */
@@ -49,8 +38,8 @@ export function prepareExportData(
   state: Pick<AnalyticsState, 'cache' | 'parameters' | 'chartFilters' | 'data'>,
   options: ExportOptions
 ): ExportData | null {
-  const { cache, parameters, chartFilters, data } = state;
-  
+  const { cache, parameters, chartFilters } = state;
+
   if (!cache.results.segments || !cache.results.summary) {
     console.error('No calculation results available for export');
     return null;
@@ -58,7 +47,7 @@ export function prepareExportData(
 
   const primaryYear = chartFilters.primaryYear;
   const yearSummary = cache.results.summary[primaryYear];
-  
+
   if (!yearSummary) {
     console.error(`No data available for year ${primaryYear}`);
     return null;
@@ -126,18 +115,18 @@ export function prepareExportData(
 
   // Build county analysis
   const countyAnalysis: ExportCountyData[] = [];
-  
+
   // Filter segments by selected counties if needed
   let exportSegments = cache.results.segments;
   if (chartFilters.selectedCounties.length > 0) {
-    exportSegments = exportSegments.filter(s => 
+    exportSegments = exportSegments.filter(s =>
       chartFilters.selectedCounties.includes(s.county)
     );
   }
 
   // Aggregate by county
   const countyMap = new Map<string, ExportCountyData>();
-  
+
   for (const segment of exportSegments) {
     const yearData = segment.data[primaryYear];
     if (!yearData) continue;
@@ -199,10 +188,10 @@ export function prepareExportData(
   if (chartFilters.compareYear && cache.results.summary[chartFilters.compareYear]) {
     const compareYear = chartFilters.compareYear;
     const compareSummary = cache.results.summary[compareYear];
-    
+
     exportData.comparisonData = {
       year: compareYear,
-      summary: compareSummary,
+      summary: compareSummary as any, // FIX: Type definition expects CalculationSummary but provides YearSummary
       categoryAnalysis: Object.entries(compareSummary.by_category)
         .map(([category, data]) => ({
           category: category as MaintenanceCategory,
@@ -292,7 +281,7 @@ export function generateCSV(
         'Road Number': segment.roadNumber,
         'County': segment.county,
         'Category': yearData?.category || 'N/A',
-        'Cost (€)': yearData?.cost.toFixed(2) || 0,
+        'Cost (€)': yearData?.cost.toFixed(2) || '0.00',
         'IRI': yearData?.iri || 'N/A',
         'RUT': yearData?.rut || 'N/A',
         'PSCI': yearData?.psci || 'N/A',
@@ -309,7 +298,7 @@ export function generateCSV(
 
   // Flatten all sections into single array
   const allRows = csvSections.flat();
-  
+
   // Generate CSV string
   const csv = Papa.unparse(allRows, {
     header: true,
@@ -390,10 +379,10 @@ export function generatePDF(
     // Summary box
     doc.setFillColor(PDF_COLORS.lightGray);
     doc.rect(PDF_MARGINS.left, currentY, doc.internal.pageSize.width - 40, 40, 'F');
-    
+
     doc.setFontSize(10);
     doc.setTextColor(PDF_COLORS.text);
-    
+
     const summaryText = [
       `Total Network: ${(data.summary.totalLength / 1000).toFixed(0)} km`,
       `Total Segments: ${data.summary.totalSegments.toLocaleString()}`,
@@ -519,11 +508,11 @@ export function generatePDF(
 
     // Thresholds
     doc.setFontSize(11);
-    doc.setFont(undefined, 'bold');
+    doc.setFont('helvetica', 'bold');
     doc.text('Maintenance Thresholds:', PDF_MARGINS.left, currentY);
     currentY += 8;
 
-    doc.setFont(undefined, 'normal');
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
 
     const thresholds = data.metadata.parameters.thresholds;
@@ -541,12 +530,12 @@ export function generatePDF(
     currentY += 5;
 
     // Costs
-    doc.setFont(undefined, 'bold');
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.text('Maintenance Costs (€/m²):', PDF_MARGINS.left, currentY);
     currentY += 8;
 
-    doc.setFont(undefined, 'normal');
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
 
     const costs = data.metadata.parameters.costs;
@@ -565,7 +554,7 @@ export function generatePDF(
   }
 
   // Add page numbers
-  const pageCount = doc.internal.getNumberOfPages();
+  const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFontSize(8);
@@ -606,19 +595,19 @@ export function downloadFile(
     }
 
     // Handle string/blob download
-    const blob = content instanceof Blob 
-      ? content 
+    const blob = content instanceof Blob
+      ? content
       : new Blob([content], { type: mimeType || 'text/plain' });
 
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = fileName;
-    
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     URL.revokeObjectURL(url);
 
     return {
@@ -673,10 +662,10 @@ function calculateAverageCondition(
 
 function addSectionTitle(doc: jsPDF, title: string, y: number): void {
   doc.setFontSize(14);
-  doc.setFont(undefined, 'bold');
+  doc.setFont('helvetica', 'bold');
   doc.setTextColor(PDF_COLORS.primary);
   doc.text(title, PDF_MARGINS.left, y);
-  doc.setFont(undefined, 'normal');
+  doc.setFont('helvetica', 'normal');
   doc.setTextColor(PDF_COLORS.text);
 }
 
@@ -706,20 +695,20 @@ export async function exportReport(
 
     // Generate the appropriate format
     let result: ExportResult;
-    
+
     switch (options.format) {
       case 'csv': {
         const csv = generateCSV(exportData, options, onProgress);
         result = downloadFile(csv, `${fileName}.csv`, 'text/csv');
         break;
       }
-      
+
       case 'pdf': {
         const pdf = generatePDF(exportData, options, onProgress);
         result = downloadFile(pdf, `${fileName}.pdf`);
         break;
       }
-      
+
       case 'excel': {
         // Excel export would require additional library (e.g., exceljs)
         // For now, fallback to CSV
@@ -727,7 +716,7 @@ export async function exportReport(
         result = downloadFile(csv, `${fileName}.csv`, 'text/csv');
         break;
       }
-      
+
       default:
         throw new Error(`Unsupported export format: ${options.format}`);
     }
