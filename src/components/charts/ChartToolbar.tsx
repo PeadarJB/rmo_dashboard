@@ -1,3 +1,4 @@
+// src/components/charts/ChartToolbar.tsx
 import React, { useMemo, useCallback } from 'react';
 import { Space, Segmented, Select, Button, Tooltip, Dropdown, message, Grid, Badge } from 'antd';
 import {
@@ -11,12 +12,15 @@ import {
   LinkOutlined,
   CompressOutlined,
   ExpandOutlined,
-  FilterOutlined, // Import the new icon
+  FilterOutlined,
+  FilePdfOutlined,
+  FileExcelOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { useAnalyticsStore } from '@/store/useAnalyticsStore';
 import { CHART_FILTER_PRESETS, DEFAULT_CHART_FILTERS } from '@/store/slices/chartFiltersSlice';
 import { useComponentLogger } from '@/utils/logger';
+import { useExport } from '@/hooks'; // Import the useExport hook
 import type { SurveyYear } from '@/types/data';
 import type { ChartMetric } from '@/store/slices/chartFiltersSlice';
 import styles from './ChartToolbar.module.css';
@@ -30,7 +34,7 @@ interface ChartToolbarProps {
   onFullscreen?: () => void;
   isFullscreen?: boolean;
   className?: string;
-  onOpenFilters?: () => void; // New prop to open the sider
+  onOpenFilters?: () => void;
 }
 
 export const ChartToolbar: React.FC<ChartToolbarProps> = ({
@@ -38,12 +42,15 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
   onFullscreen,
   isFullscreen = false,
   className,
-  onOpenFilters, // Destructure the new prop
+  onOpenFilters,
 }) => {
   const logger = useComponentLogger('ChartToolbar');
   const screens = useBreakpoint();
   const isMobile = !screens.md;
   const isTablet = screens.md && !screens.lg;
+
+  // Export hook
+  const { exportPDF, exportCSV, canExport, isExporting } = useExport();
 
   // Zustand store selectors
   const chartFilters = useAnalyticsStore((s) => s.chartFilters);
@@ -65,19 +72,16 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
     return { hasActiveFilters: count > 0, activeFilterCount: count };
   }, [chartFilters]);
 
-  // Available counties for multi-select
   const availableCounties = useMemo(() => {
     if (!summaryData?.localAuthorities) return [];
     return [...summaryData.localAuthorities].sort();
   }, [summaryData]);
 
-  // Compare-year options (exclude current primaryYear)
   const compareYearOptions = useMemo(() => {
     const years: SurveyYear[] = ['2011', '2018', '2025'];
     return years.filter((y) => y !== chartFilters.primaryYear);
   }, [chartFilters.primaryYear]);
 
-  // Metric options
   const metricOptions = useMemo(
     () => [
       {
@@ -111,7 +115,6 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
     []
   );
 
-  // Preset menu
   const presetMenuItems: MenuProps['items'] = useMemo(
     () =>
       Object.entries(CHART_FILTER_PRESETS).map(([key, preset]) => ({
@@ -126,38 +129,35 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
     [setChartCounties, logger]
   );
 
-  // Handlers
-  const handleMetricChange = useCallback(
-    (value: string | number) => {
-      setChartMetric(value as ChartMetric);
+  const exportMenuItems: MenuProps['items'] = [
+    {
+      key: 'image',
+      icon: <DownloadOutlined />,
+      label: 'Export Chart (PNG)',
+      onClick: onExport,
     },
-    [setChartMetric]
-  );
+    {
+      key: 'csv',
+      icon: <FileExcelOutlined />,
+      label: 'Export Data (CSV)',
+      onClick: exportCSV,
+      disabled: !canExport || isExporting,
+    },
+    {
+      key: 'pdf',
+      icon: <FilePdfOutlined />,
+      label: 'Export Report (PDF)',
+      onClick: exportPDF,
+      disabled: !canExport || isExporting,
+    },
+  ];
 
-  const handleYearChange = useCallback(
-    (value: SurveyYear) => {
-      setChartPrimaryYear(value);
-    },
-    [setChartPrimaryYear]
-  );
-
-  const handleCompareYearChange = useCallback(
-    (value: SurveyYear | undefined) => {
-      setChartCompareYear(value || null);
-    },
-    [setChartCompareYear]
-  );
-
-  const handleCountyChange = useCallback(
-    (values: string[]) => {
-      setChartCounties(values);
-    },
-    [setChartCounties]
-  );
+  const handleMetricChange = useCallback((value: string | number) => setChartMetric(value as ChartMetric), [setChartMetric]);
+  const handleYearChange = useCallback((value: SurveyYear) => setChartPrimaryYear(value), [setChartPrimaryYear]);
+  const handleCompareYearChange = useCallback((value: SurveyYear | undefined) => setChartCompareYear(value || null), [setChartCompareYear]);
+  const handleCountyChange = useCallback((values: string[]) => setChartCounties(values), [setChartCounties]);
 
   const handleCopyLink = useCallback(() => {
-    // This logic will be passed up to the parent to be handled in FilterControls
-    // For now, it remains here but will be moved.
     const params = new URLSearchParams();
     if (chartFilters.metric !== DEFAULT_CHART_FILTERS.metric) params.set('metric', chartFilters.metric);
     if (chartFilters.primaryYear !== DEFAULT_CHART_FILTERS.primaryYear) params.set('year', chartFilters.primaryYear);
@@ -191,12 +191,8 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
     [availableCounties, presetMenuItems, setChartCounties]
   );
 
-  const maxTagCount = useMemo(() => {
-    if (isTablet) return 2;
-    return 'responsive' as const;
-  }, [isTablet]);
+  const maxTagCount = useMemo(() => (isTablet ? 2 : 'responsive' as const), [isTablet]);
 
-  // Conditional Rendering for Mobile vs. Desktop
   if (isMobile) {
     return (
       <div className={`${styles.toolbar} ${className || ''}`}>
@@ -249,7 +245,6 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
               const code = String(option?.value || '');
               const name = COUNTY_NAMES[code] || '';
               const lowerInput = input.toLowerCase();
-              // Search both county name and county code
               return name.toLowerCase().includes(lowerInput) || code.toLowerCase().includes(lowerInput);
             }}
           >
@@ -267,7 +262,16 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
       <div className={styles.toolbarActions}>
         <Space.Compact>
           <Tooltip title="Copy shareable link"><Button icon={<LinkOutlined />} onClick={handleCopyLink} /></Tooltip>
-          {onExport && <Tooltip title="Export chart"><Button icon={<DownloadOutlined />} onClick={onExport} /></Tooltip>}
+          {onExport && (
+            <Dropdown.Button
+              icon={<DownloadOutlined />}
+              menu={{ items: exportMenuItems }}
+              onClick={onExport}
+              disabled={isExporting}
+            >
+              Export
+            </Dropdown.Button>
+          )}
           {onFullscreen && <Tooltip title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}><Button icon={isFullscreen ? <CompressOutlined /> : <ExpandOutlined />} onClick={onFullscreen} /></Tooltip>}
           <Tooltip title="Reset filters">
             <Button icon={<ReloadOutlined />} onClick={handleReset} disabled={!hasActiveFilters}>

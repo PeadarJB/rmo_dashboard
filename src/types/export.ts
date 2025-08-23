@@ -3,10 +3,8 @@ import type {
   CalculatedRoadSegment, 
   CalculationSummary, 
   MaintenanceCategory,
-  CategorySummary 
 } from './calculations';
 import type { SurveyYear } from './data';
-import type { ChartFiltersState } from '@/store/slices/chartFiltersSlice';
 import type { ParametersSlice } from './store';
 
 // Export format options

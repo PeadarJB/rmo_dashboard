@@ -1,3 +1,4 @@
+// src/components/layout/Header.tsx
 import React, { useState } from 'react';
 import {
   Avatar,
@@ -9,6 +10,7 @@ import {
   Tooltip,
   Grid,
   Drawer,
+  message,
 } from 'antd';
 import {
   UserOutlined,
@@ -23,12 +25,14 @@ import {
   MenuUnfoldOutlined,
   MenuFoldOutlined,
   MoreOutlined,
-  FilterOutlined, // Import FilterOutlined
+  FilterOutlined,
+  FilePdfOutlined,
+  FileExcelOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { useComponentLogger } from '@/utils/logger';
-import { useAnalyticsStore, selectors } from '@/store/useAnalyticsStore'; // Import selectors
-import { useScrollDirection } from '@/hooks';
+import { useAnalyticsStore, selectors } from '@/store/useAnalyticsStore';
+import { useScrollDirection, useExport } from '@/hooks';
 import styles from './Header.module.css';
 import logo from '/img/RMO_Logo.png';
 
@@ -39,7 +43,7 @@ interface HeaderProps {
   isDarkMode?: boolean;
   onMenuClick?: () => void;
   isSiderVisible?: boolean;
-  onFilterClick?: () => void; // New prop for filter sider
+  onFilterClick?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -47,22 +51,24 @@ export const Header: React.FC<HeaderProps> = ({
   isDarkMode = false,
   onMenuClick,
   isSiderVisible = false,
-  onFilterClick, // Destructure new prop
+  onFilterClick,
 }) => {
   const logger = useComponentLogger('Header');
   const screens = useBreakpoint();
   const [notificationDrawer, setNotificationDrawer] = useState(false);
   const scrollDir = useScrollDirection();
 
+  // --- Store and Hook Selectors ---
   const setAuthenticated = useAnalyticsStore((state) => state.setAuthenticated);
-  const isCalculating = useAnalyticsStore(state => state.ui.isLoading);
-  const hasData = useAnalyticsStore(state => !!state.data.fullDataset);
-  const lastCalculation = useAnalyticsStore(state => state.cache.results.timestamp);
-  // Use the selector to get the active filter count
-  const activeChartFilterCount = useAnalyticsStore(state => selectors.activeChartFilterCount(state));
+  const isCalculating = useAnalyticsStore((state) => state.ui.isLoading);
+  const hasData = useAnalyticsStore((state) => !!state.data.fullDataset);
+  const lastCalculation = useAnalyticsStore((state) => state.cache.results.timestamp);
+  const activeChartFilterCount = useAnalyticsStore((state) => selectors.activeChartFilterCount(state));
+  const { quickExportPDF, quickExportCSV, canExport, isExporting } = useExport();
 
   const isMobile = !screens.md;
 
+  // --- Handlers ---
   const handleThemeToggle = (checked: boolean) => {
     onThemeChange?.(checked);
     logger.action('themeToggle', { isDark: checked });
@@ -73,6 +79,23 @@ export const Header: React.FC<HeaderProps> = ({
     setAuthenticated(false);
   };
 
+  const handleExportPDF = async () => {
+    logger.action('headerExportPDF');
+    const result = await quickExportPDF();
+    if (result?.success) {
+      message.success(`Successfully generated ${result.fileName}`);
+    }
+  };
+
+  const handleExportCSV = async () => {
+    logger.action('headerExportCSV');
+    const result = await quickExportCSV();
+    if (result?.success) {
+      message.success(`Successfully generated ${result.fileName}`);
+    }
+  };
+
+  // --- Menu Definitions ---
   const userMenuItems: MenuProps['items'] = [
     { key: 'profile', icon: <UserOutlined />, label: 'Profile' },
     { key: 'settings', icon: <SettingOutlined />, label: 'Settings' },
@@ -81,11 +104,38 @@ export const Header: React.FC<HeaderProps> = ({
     { key: 'logout', icon: <LogoutOutlined />, label: 'Logout', danger: true, onClick: handleLogout },
   ];
 
-  const actionMenuItems: MenuProps['items'] = [
-    { key: 'export', icon: <DownloadOutlined />, label: 'Export Results', disabled: !lastCalculation },
-    { key: 'refresh', icon: <SyncOutlined spin={isCalculating} />, label: isCalculating ? 'Calculating...' : 'Refresh Data', disabled: !hasData || isCalculating },
+  const exportMenuItems: MenuProps['items'] = [
+    {
+      key: 'pdf',
+      icon: <FilePdfOutlined />,
+      label: 'Export Report (PDF)',
+      onClick: handleExportPDF,
+    },
+    {
+      key: 'csv',
+      icon: <FileExcelOutlined />,
+      label: 'Export Data (CSV)',
+      onClick: handleExportCSV,
+    },
   ];
 
+  const actionMenuItems: MenuProps['items'] = [
+    {
+      key: 'export',
+      icon: <DownloadOutlined />,
+      label: 'Export Results',
+      disabled: !canExport || isExporting,
+      children: exportMenuItems,
+    },
+    {
+      key: 'refresh',
+      icon: <SyncOutlined spin={isCalculating} />,
+      label: isCalculating ? 'Calculating...' : 'Refresh Data',
+      disabled: !hasData || isCalculating,
+    },
+  ];
+
+  // --- Render Logic ---
   if (isMobile) {
     const mobileMenuItems: MenuProps['items'] = [
       ...actionMenuItems,
@@ -97,7 +147,7 @@ export const Header: React.FC<HeaderProps> = ({
             <FilterOutlined />
           </Badge>
         ),
-        onClick: onFilterClick, // Connect to the handler
+        onClick: onFilterClick,
       },
       { type: 'divider' },
       { key: 'theme', label: isDarkMode ? 'Light theme' : 'Dark theme', icon: isDarkMode ? <SunOutlined /> : <MoonOutlined />, onClick: () => onThemeChange?.(!isDarkMode) },
