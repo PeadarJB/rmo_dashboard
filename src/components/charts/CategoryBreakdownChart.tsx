@@ -26,6 +26,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAnalyticsStore } from '@/store/useAnalyticsStore';
 import { useComponentLogger, usePerformanceTimer } from '@/utils/logger';
 import type { MaintenanceCategory } from '@/types/calculations';
+import type { SurveyYear } from '@/types/data';
 import styles from './CategoryBreakdownChart.module.css';
 
 // Register Chart.js components
@@ -115,7 +116,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
       return [];
     }
 
-    const displayYear = selectedYear === '2011' ? '2011' : '2018';
+    const displayYear = selectedYear as SurveyYear;
     const countyData: Record<string, { count: number; cost: number; length: number }> = {};
 
     calculationResults.segments.forEach(segment => {

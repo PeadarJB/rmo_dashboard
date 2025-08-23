@@ -127,19 +127,18 @@ export class DataLoaderService {
   private extractSummaryTotals(summaryFile: ValidatedSummaryFile): SummaryData {
     let totalSegments = 0;
     let totalCost = 0;
-    
-    // Aggregate from all counties and years
+    // Dynamically get the latest year from the metadata
+    const latestYear = summaryFile.metadata.surveyYears.reduce((a, b) => a > b ? a : b);
+
+    // Aggregate from all counties for the latest year
     for (const county in summaryFile.summary) {
       const countyData = summaryFile.summary[county];
-      for (const year in countyData) {
-        const yearData = countyData[year];
+      if (countyData[latestYear]) {
+        const yearData = countyData[latestYear];
         for (const category in yearData) {
           const categoryData = yearData[category];
-          // Only count 2018 data for totals (most recent complete survey)
-          if (year === '2018') {
-            totalSegments += categoryData.count;
-            totalCost += categoryData.cost;
-          }
+          totalSegments += categoryData.count;
+          totalCost += categoryData.cost;
         }
       }
     }

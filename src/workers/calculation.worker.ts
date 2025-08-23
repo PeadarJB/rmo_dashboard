@@ -319,7 +319,7 @@ class CalculationWorker {
       const summary: CalculationSummary = {
         '2011': this.aggregateResults(calculatedSegments, '2011'),
         '2018': this.aggregateResults(calculatedSegments, '2018'),
-        '2025': this.aggregateResults([], '2025'), // Remains empty as there is no 2025 data
+        '2025': this.aggregateResults(calculatedSegments, '2025'),
       };
 
       const durationMs = Date.now() - startTime;
