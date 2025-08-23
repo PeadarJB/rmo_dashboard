@@ -3,4 +3,5 @@ export { useCalculation } from './useCalculation';
 export { useAppInitializer } from './useAppInitializer';
 export { useComponentLogger, usePerformanceTimer } from '../utils/logger';
 export { useResponsive } from './useResponsive';
-export { useScrollDirection } from './useScrollDirection'; // Add this export
+export { useScrollDirection } from './useScrollDirection';
+export { useExport } from './useExport'; // Add this line
