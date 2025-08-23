@@ -69,7 +69,7 @@ export const FilterControls: React.FC<FilterControlsProps> = React.memo(
     }, [summaryData]);
 
     const compareYearOptions = useMemo(() => {
-      const years: SurveyYear[] = ['2011', '2018'];
+      const years: SurveyYear[] = ['2011', '2018', '2025'];
       return years.filter((y) => y !== chartFilters.primaryYear);
     }, [chartFilters.primaryYear]);
 
@@ -137,6 +137,7 @@ export const FilterControls: React.FC<FilterControlsProps> = React.memo(
                 >
                   <Option value="2011">2011</Option>
                   <Option value="2018">2018</Option>
+                  <Option value="2025">2025</Option>
                 </Select>
               </div>
               <div className={styles.controlGroup}>

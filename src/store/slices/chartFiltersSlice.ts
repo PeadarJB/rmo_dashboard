@@ -32,7 +32,7 @@ export interface ChartFiltersState {
 
 export const DEFAULT_CHART_FILTERS: ChartFiltersState = {
   metric: 'percentage',
-  primaryYear: '2018',
+  primaryYear: '2025',
   compareYear: null,
   selectedCounties: [],
   sortBy: 'value',

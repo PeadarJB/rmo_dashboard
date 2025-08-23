@@ -73,7 +73,7 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
 
   // Compare-year options (exclude current primaryYear)
   const compareYearOptions = useMemo(() => {
-    const years: SurveyYear[] = ['2011', '2018'];
+    const years: SurveyYear[] = ['2011', '2018', '2025'];
     return years.filter((y) => y !== chartFilters.primaryYear);
   }, [chartFilters.primaryYear]);
 
@@ -221,7 +221,7 @@ export const ChartToolbar: React.FC<ChartToolbarProps> = ({
         <Select
           value={chartFilters.primaryYear}
           onChange={handleYearChange}
-          options={[{ label: '2011', value: '2011' }, { label: '2018', value: '2018' }]}
+          options={[{ label: '2011', value: '2011' }, { label: '2018', value: '2018' }, { label: '2025', value: '2025' }]}
           style={{ minWidth: 96 }}
           suffixIcon={<CalendarOutlined />}
         />
