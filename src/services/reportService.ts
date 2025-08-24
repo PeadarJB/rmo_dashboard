@@ -293,7 +293,7 @@ export class ReportService {
     });
 
     // Average Cost per km
-    const avgCostPerKm = yearSummary.total_cost / networkLengthKm;
+    const avgCostPerKm = networkLengthKm > 0 ? yearSummary.total_cost / networkLengthKm : 0;
     kpis.push({
       name: 'Average Cost per km',
       value: avgCostPerKm,
@@ -302,7 +302,7 @@ export class ReportService {
     });
 
     // Cost per segment
-    const costPerSegment = yearSummary.total_cost / yearSummary.total_segments;
+    const costPerSegment = yearSummary.total_segments > 0 ? yearSummary.total_cost / yearSummary.total_segments : 0;
     kpis.push({
       name: 'Average Cost per Segment',
       value: costPerSegment,

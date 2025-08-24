@@ -96,7 +96,7 @@ export function generateCSV(
         'Road Number': segment.roadNumber,
         'County': segment.county,
         'Category': yearData?.category || 'N/A',
-        'Cost (€)': yearData?.cost.toFixed(2) || '0.00',
+        'Cost (€)': yearData ? yearData.cost.toFixed(2) : '0.00',
         'IRI': yearData?.iri || 'N/A',
         'RUT': yearData?.rut || 'N/A',
         'PSCI': yearData?.psci || 'N/A',
