@@ -24,7 +24,7 @@ export interface KPICardProps {
   loading?: boolean;
   description?: string;
   formatter?: (value: number | string) => string;
-  color?: 'default' | 'success' | 'warning' | 'error';
+  invertTrendColor?: boolean; // New prop to invert trend colors
   size?: 'small' | 'default' | 'large';
   onClick?: () => void;
 }
@@ -40,7 +40,7 @@ export const KPICard: React.FC<KPICardProps> = ({
   loading = false,
   description,
   formatter,
-  color = 'default',
+  invertTrendColor = false, // Default to false
   size = 'default',
   onClick,
 }) => {
@@ -76,19 +76,6 @@ export const KPICard: React.FC<KPICardProps> = ({
     }
   };
 
-  const getColorClass = () => {
-    switch (color) {
-      case 'success':
-        return styles.success;
-      case 'warning':
-        return styles.warning;
-      case 'error':
-        return styles.error;
-      default:
-        return styles.default;
-    }
-  };
-
   const getSizeClass = () => {
     switch (size) {
       case 'small':
@@ -112,6 +99,17 @@ export const KPICard: React.FC<KPICardProps> = ({
     }
     return displayValue;
   };
+  
+  const getTrendClass = (direction: 'up' | 'down' | 'neutral') => {
+    if (direction === 'neutral') return styles.tickerNeutral;
+    
+    if (invertTrendColor) {
+      return direction === 'up' ? styles.tickerDown : styles.tickerUp;
+    }
+    
+    return direction === 'up' ? styles.tickerUp : styles.tickerDown;
+  };
+
 
   return (
     <motion.div
@@ -120,7 +118,7 @@ export const KPICard: React.FC<KPICardProps> = ({
       transition={{ duration: 0.3 }}
     >
       <Card
-        className={`${styles.kpiCard} ${getColorClass()} ${getSizeClass()} ${
+        className={`${styles.kpiCard} ${getSizeClass()} ${
           onClick ? styles.clickable : ''
         }`}
         onClick={handleClick}
@@ -166,13 +164,7 @@ export const KPICard: React.FC<KPICardProps> = ({
               <div key={trend.year} className={styles.tickerItem}>
                 <span className={styles.tickerYear}>vs {trend.year}</span>
                 <span
-                  className={`${styles.tickerValue} ${
-                    trend.direction === 'up'
-                      ? styles.tickerUp
-                      : trend.direction === 'down'
-                      ? styles.tickerDown
-                      : styles.tickerNeutral
-                  }`}
+                  className={`${styles.tickerValue} ${getTrendClass(trend.direction)}`}
                 >
                   {trend.direction === 'up' && <ArrowUpOutlined />}
                   {trend.direction === 'down' && <ArrowDownOutlined />}

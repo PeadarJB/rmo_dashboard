@@ -171,7 +171,7 @@ export const KPISummary: React.FC = () => {
               if (num >= 1e3) return `${(num / 1e3).toFixed(1)}K`;
               return num.toString();
             }}
-            color={primaryKPIs.totalCost > 1e9 ? 'warning' : 'default'}
+            invertTrendColor={true}
             trends={trendComparisons.totalCost}
           />
         </Col>
@@ -198,13 +198,6 @@ export const KPISummary: React.FC = () => {
             precision={1}
             loading={isLoading}
             description="Overall network condition (100 = excellent)"
-            color={
-              primaryKPIs.conditionScore >= 80
-                ? 'success'
-                : primaryKPIs.conditionScore >= 60
-                ? 'warning'
-                : 'error'
-            }
             trends={trendComparisons.conditionScore}
           />
         </Col>
@@ -217,11 +210,6 @@ export const KPISummary: React.FC = () => {
             suffix={`/ ${primaryKPIs.totalSegments.toLocaleString()}`}
             loading={isLoading}
             description="Segments analyzed in current calculation vs. total available"
-            color={
-              primaryKPIs.segmentsProcessed === primaryKPIs.totalSegments
-                ? 'success'
-                : 'default'
-            }
             trends={trendComparisons.segmentsProcessed}
           />
         </Col>
