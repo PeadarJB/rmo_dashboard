@@ -1,7 +1,8 @@
 // src/utils/exportHelpers.ts
 import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import autoTable, { UserOptions } from 'jspdf-autotable';
 import Papa from 'papaparse';
+import { logger } from './logger';
 import type {
   ExportData,
   ExportOptions,
@@ -22,6 +23,23 @@ const PDF_COLORS = {
 };
 
 /**
+ * Utility function to convert hex color to RGB array for jsPDF.
+ * @param hex The hex color string (e.g., '#f0f0f0').
+ * @returns An array of RGB values (e.g., [240, 240, 240]).
+ */
+function hexToRgb(hex: string): [number, number, number] {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? [
+        parseInt(result[1], 16),
+        parseInt(result[2], 16),
+        parseInt(result[3], 16),
+      ]
+    : [0, 0, 0]; // Default to black if format is invalid
+}
+
+
+/**
  * Generate CSV from export data
  */
 export function generateCSV(
@@ -29,96 +47,122 @@ export function generateCSV(
   options: ExportOptions,
   onProgress?: ExportProgressCallback
 ): string {
+  logger.info('exportHelpers', 'Starting CSV generation.', { options });
   onProgress?.({
     stage: 'generating',
     percentage: 0,
     message: 'Generating CSV file...',
   });
 
-  const csvSections: CSVRow[][] = [];
+  const csvSections: string[] = [];
+
+  // Helper to convert an array of objects to a CSV string
+  const toCSV = (data: CSVRow[], sectionTitle: string): string => {
+    if (!data.length) return '';
+    logger.debug('exportHelpers', `Creating CSV section: ${sectionTitle}`, { count: data.length });
+    return (
+      `${sectionTitle}\n` +
+      Papa.unparse(data, {
+        header: true,
+        skipEmptyLines: true,
+      }) +
+      '\n'
+    );
+  };
 
   // Metadata section
   if (options.includeMetadata) {
-    csvSections.push([
-      { 'Report Title': data.metadata.reportTitle },
-      { 'Generated At': data.metadata.generatedAt },
-      { 'Data Period': data.metadata.reportPeriod },
-      { 'Total Network Length (km)': data.metadata.totalNetworkLength / 1000 },
-      { 'Total Cost (€)': data.metadata.totalCost },
-      {},
-    ]);
+    const metadataRows: CSVRow[] = [
+      { Key: 'Report Title', Value: data.metadata.reportTitle },
+      { Key: 'Generated At', Value: data.metadata.generatedAt },
+      { Key: 'Data Period', Value: data.metadata.reportPeriod },
+      {
+        Key: 'Total Network Length (km)',
+        Value: data.metadata.totalNetworkLength / 1000,
+      },
+      { Key: 'Total Cost (€)', Value: data.metadata.totalCost },
+    ];
+    csvSections.push(toCSV(metadataRows, 'Metadata'));
   }
+
+  onProgress?.({
+    stage: 'generating',
+    percentage: 20,
+    message: 'Processing KPIs...',
+  });
 
   // KPIs section
-  if (options.sections.kpis) {
-    const kpiRows: CSVRow[] = data.kpis.map(kpi => ({
-      'KPI': kpi.name,
-      'Value': kpi.value,
-      'Unit': kpi.unit,
-      'Formatted': kpi.formatted,
+  if (options.sections.kpis && data.kpis.length > 0) {
+    const kpiRows: CSVRow[] = data.kpis.map((kpi) => ({
+      KPI: kpi.name,
+      Value: kpi.value,
+      Unit: kpi.unit,
+      Formatted: kpi.formatted,
     }));
-    csvSections.push(kpiRows);
-    csvSections.push([{}]); // Empty row for separation
+    csvSections.push(toCSV(kpiRows, 'Key Performance Indicators'));
   }
+
+  onProgress?.({
+    stage: 'generating',
+    percentage: 40,
+    message: 'Processing category breakdown...',
+  });
 
   // Category breakdown
-  if (options.sections.categoryBreakdown) {
-    const categoryRows: CSVRow[] = data.categoryAnalysis.map(cat => ({
+  if (options.sections.categoryBreakdown && data.categoryAnalysis.length > 0) {
+    const categoryRows: CSVRow[] = data.categoryAnalysis.map((cat) => ({
       'Maintenance Category': cat.category,
-      'Segments': cat.segments,
+      Segments: cat.segments,
       'Length (km)': cat.lengthKm.toFixed(2),
       'Cost (€)': cat.cost.toFixed(2),
-      'Percentage': `${cat.percentage.toFixed(1)}%`,
+      Percentage: `${cat.percentage.toFixed(1)}%`,
     }));
-    csvSections.push(categoryRows);
-    csvSections.push([{}]);
+    csvSections.push(toCSV(categoryRows, 'Maintenance Category Breakdown'));
   }
 
+  onProgress?.({
+    stage: 'generating',
+    percentage: 60,
+    message: 'Processing county analysis...',
+  });
+
   // County analysis
-  if (options.sections.countyAnalysis) {
-    const countyRows: CSVRow[] = data.countyAnalysis.map(county => ({
+  if (options.sections.countyAnalysis && data.countyAnalysis.length > 0) {
+    const countyRows: CSVRow[] = data.countyAnalysis.map((county) => ({
       'County Code': county.code,
       'County Name': county.name,
       'Total Segments': county.totalSegments,
       'Total Length (km)': county.totalLengthKm.toFixed(2),
       'Total Cost (€)': county.totalCost.toFixed(2),
     }));
-    csvSections.push(countyRows);
-    csvSections.push([{}]);
-  }
-
-  // Detailed segments
-  if (options.sections.detailedSegments && data.segments) {
-    const segmentRows: CSVRow[] = data.segments.slice(0, 10000).map(segment => {
-      const yearData = segment.data[data.summary.year];
-      return {
-        'Segment ID': segment.id,
-        'Road Number': segment.roadNumber,
-        'County': segment.county,
-        'Category': yearData?.category || 'N/A',
-        'Cost (€)': yearData ? yearData.cost.toFixed(2) : '0.00',
-        'IRI': yearData?.iri || 'N/A',
-        'RUT': yearData?.rut || 'N/A',
-        'PSCI': yearData?.psci || 'N/A',
-      };
-    });
-    csvSections.push(segmentRows);
+    csvSections.push(toCSV(countyRows, 'County Analysis'));
   }
 
   onProgress?.({
     stage: 'generating',
     percentage: 80,
-    message: 'Formatting CSV data...',
+    message: 'Processing detailed segments...',
   });
 
-  // Flatten all sections into single array
-  const allRows = csvSections.flat();
-
-  // Generate CSV string
-  const csv = Papa.unparse(allRows, {
-    header: true,
-    skipEmptyLines: true,
-  });
+  // Detailed segments
+  if (options.sections.detailedSegments && data.segments && data.segments.length > 0) {
+    const segmentRows: CSVRow[] = data.segments
+      .slice(0, 10000)
+      .map((segment) => {
+        const yearData = segment.data[data.summary.year];
+        return {
+          'Segment ID': segment.id,
+          'Road Number': segment.roadNumber,
+          County: segment.county,
+          Category: yearData?.category || 'N/A',
+          'Cost (€)': yearData ? yearData.cost.toFixed(2) : '0.00',
+          IRI: yearData?.iri || 'N/A',
+          RUT: yearData?.rut || 'N/A',
+          PSCI: yearData?.psci || 'N/A',
+        };
+      });
+    csvSections.push(toCSV(segmentRows, 'Detailed Segments'));
+  }
 
   onProgress?.({
     stage: 'complete',
@@ -126,8 +170,10 @@ export function generateCSV(
     message: 'CSV generation complete',
   });
 
-  return csv;
+  logger.info('exportHelpers', 'CSV generation finished.');
+  return csvSections.join('\n');
 }
+
 
 /**
  * Generate PDF report from export data
@@ -137,6 +183,7 @@ export function generatePDF(
   options: ExportOptions,
   onProgress?: ExportProgressCallback
 ): jsPDF {
+  logger.info('exportHelpers', 'Starting PDF generation.', { options });
   onProgress?.({
     stage: 'generating',
     percentage: 0,
@@ -185,6 +232,7 @@ export function generatePDF(
 
   // Executive Summary
   if (options.sections.summary) {
+    logger.debug('exportHelpers', 'Adding Executive Summary to PDF.');
     doc.addPage();
     currentY = PDF_MARGINS.top;
 
@@ -192,7 +240,7 @@ export function generatePDF(
     currentY += 15;
 
     // Summary box
-    doc.setFillColor(PDF_COLORS.lightGray);
+    doc.setFillColor(...hexToRgb(PDF_COLORS.lightGray));
     doc.rect(PDF_MARGINS.left, currentY, doc.internal.pageSize.width - 40, 40, 'F');
 
     doc.setFontSize(10);
@@ -219,7 +267,8 @@ export function generatePDF(
   });
 
   // KPIs Table
-  if (options.sections.kpis) {
+  if (options.sections.kpis && data.kpis.length > 0) {
+    logger.debug('exportHelpers', 'Adding KPIs to PDF.');
     addSectionTitle(doc, 'Key Performance Indicators', currentY);
     currentY += 10;
 
@@ -228,9 +277,9 @@ export function generatePDF(
       head: [['Indicator', 'Value', 'Unit']],
       body: data.kpis.map(kpi => [kpi.name, kpi.formatted, kpi.unit]),
       theme: 'striped',
-      headStyles: { fillColor: PDF_COLORS.primary },
+      headStyles: { fillColor: hexToRgb(PDF_COLORS.primary) },
       margin: { left: PDF_MARGINS.left, right: PDF_MARGINS.right },
-    });
+    } as UserOptions);
 
     currentY = (doc as any).lastAutoTable.finalY + 10;
   }
@@ -242,7 +291,8 @@ export function generatePDF(
   });
 
   // Category Breakdown
-  if (options.sections.categoryBreakdown) {
+  if (options.sections.categoryBreakdown && data.categoryAnalysis.length > 0) {
+    logger.debug('exportHelpers', 'Adding Category Breakdown to PDF.');
     if (currentY > 200) {
       doc.addPage();
       currentY = PDF_MARGINS.top;
@@ -262,7 +312,7 @@ export function generatePDF(
         `${cat.percentage.toFixed(1)}%`,
       ]),
       theme: 'striped',
-      headStyles: { fillColor: PDF_COLORS.primary },
+      headStyles: { fillColor: hexToRgb(PDF_COLORS.primary) },
       margin: { left: PDF_MARGINS.left, right: PDF_MARGINS.right },
       columnStyles: {
         1: { halign: 'right' },
@@ -270,7 +320,7 @@ export function generatePDF(
         3: { halign: 'right' },
         4: { halign: 'right' },
       },
-    });
+    } as UserOptions);
 
     currentY = (doc as any).lastAutoTable.finalY + 10;
   }
@@ -283,6 +333,7 @@ export function generatePDF(
 
   // County Analysis (Top 10)
   if (options.sections.countyAnalysis && data.countyAnalysis.length > 0) {
+    logger.debug('exportHelpers', 'Adding County Analysis to PDF.');
     if (currentY > 180) {
       doc.addPage();
       currentY = PDF_MARGINS.top;
@@ -301,20 +352,21 @@ export function generatePDF(
         formatCurrency(county.totalCost),
       ]),
       theme: 'striped',
-      headStyles: { fillColor: PDF_COLORS.primary },
+      headStyles: { fillColor: hexToRgb(PDF_COLORS.primary) },
       margin: { left: PDF_MARGINS.left, right: PDF_MARGINS.right },
       columnStyles: {
         1: { halign: 'right' },
         2: { halign: 'right' },
         3: { halign: 'right' },
       },
-    });
+    } as UserOptions);
 
     currentY = (doc as any).lastAutoTable.finalY + 10;
   }
 
   // Parameters Used
   if (options.sections.parameters) {
+    logger.debug('exportHelpers', 'Adding Parameters to PDF.');
     doc.addPage();
     currentY = PDF_MARGINS.top;
 
@@ -369,7 +421,7 @@ export function generatePDF(
   }
 
   // Add page numbers
-  const pageCount = doc.getNumberOfPages();
+  const pageCount = (doc as any).internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFontSize(8);
@@ -388,6 +440,7 @@ export function generatePDF(
     message: 'PDF generation complete',
   });
 
+  logger.info('exportHelpers', 'PDF generation finished.');
   return doc;
 }
 
@@ -431,7 +484,7 @@ export function downloadFile(
       fileSize: blob.size,
     };
   } catch (error) {
-    console.error('Download failed:', error);
+    logger.error('exportHelpers', 'Download failed', { error });
     return {
       success: false,
       fileName,
@@ -444,8 +497,8 @@ export function downloadFile(
 
 function formatCurrency(value: number): string {
   if (value >= 1e9) return `€${(value / 1e9).toFixed(2)}B`;
-  if (value >= 1e6) return `€${(value / 1e6).toFixed(2)}M`;
-  if (value >= 1e3) return `€${(value / 1e3).toFixed(2)}K`;
+  if (value >= 1e6) return `€${(value / 1e6).toFixed(1)}M`;
+  if (value >= 1e3) return `€${(value / 1e3).toFixed(0)}K`;
   return `€${value.toFixed(2)}`;
 }
 
@@ -464,6 +517,7 @@ export async function exportReport(
   options: ExportOptions,
   onProgress?: ExportProgressCallback
 ): Promise<ExportResult> {
+  logger.info('exportHelpers', `Starting exportReport for format: ${options.format}`);
   try {
     onProgress?.({
       stage: 'preparing',
@@ -500,6 +554,7 @@ export async function exportReport(
       case 'excel': {
         // Excel export would require additional library (e.g., exceljs)
         // For now, fallback to CSV
+        logger.warn('exportHelpers', 'Excel format not implemented, falling back to CSV.');
         const csv = generateCSV(exportData, options, onProgress);
         result = downloadFile(csv, `${fileName}.csv`, 'text/csv');
         break;
@@ -509,9 +564,10 @@ export async function exportReport(
         throw new Error(`Unsupported export format: ${options.format}`);
     }
 
+    logger.info('exportHelpers', 'exportReport completed successfully.', { result });
     return result;
   } catch (error) {
-    console.error('Export failed:', error);
+    logger.error('exportHelpers', 'Export failed', { error });
     return {
       success: false,
       fileName: options.fileName || 'export',
