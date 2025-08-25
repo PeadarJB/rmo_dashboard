@@ -268,23 +268,68 @@ export const createChartFiltersActions = (set: any): ChartFiltersActions => ({
     })),
 });
 
-// ============= QUICK PRESETS =============
+// ============= CHART FILTER PRESETS =============
+// ✅ FIXED: Updated to use correct county codes that match actual data structure
 
 export const CHART_FILTER_PRESETS = {
   dublinRegion: {
     name: 'Dublin Region',
-    counties: ['DCC', 'DLR', 'FL', 'SD'], // DCC stays, DLRD→DLR, FIN→FL, STHDUB→SD
+    description: 'All Dublin administrative areas',
+    counties: ['DCC', 'DLR', 'FL', 'SD'], // Dublin City, Dún Laoghaire-Rathdown, Fingal, South Dublin
   },
   cities: {
-    name: 'Cities Only',  
-    counties: ['CC', 'DCC', 'GC'], // CORKCITY→CC, DCC stays, GALCITY→GC
+    name: 'City Councils',
+    description: 'Major city councils only',  
+    counties: ['CC', 'DCC', 'GC'], // Cork City, Dublin City, Galway City
   },
   western: {
     name: 'Western Counties',
-    counties: ['GY', 'MO', 'RN', 'SO', 'LM', 'DL'], // GAL→GY, MAY→MO, ROS→RN, SLI→SO, LEI→LM, DON→DL
+    description: 'Counties on the western seaboard',
+    counties: ['GY', 'MO', 'RN', 'SO', 'LK', 'DL'], // Galway, Mayo, Roscommon, Sligo, Limerick, Donegal
+  },
+  eastern: {
+    name: 'Eastern Counties',
+    description: 'Counties on the eastern seaboard',
+    counties: ['WW', 'WX', 'CW', 'KE', 'MH', 'LH'], // Wicklow, Wexford, Carlow, Kildare, Meath, Louth
+  },
+  southern: {
+    name: 'Southern Counties',
+    description: 'Counties in the southern region',
+    counties: ['CK', 'CC', 'KY', 'WD'], // Cork, Cork City, Kerry, Waterford
+  },
+  northern: {
+    name: 'Northern Counties',
+    description: 'Counties in the northern region',
+    counties: ['DL', 'SO', 'LM', 'CN', 'MN'], // Donegal, Sligo, Leitrim, Cavan, Monaghan
+  },
+  midlands: {
+    name: 'Midland Counties',
+    description: 'Central counties of Ireland',
+    counties: ['LD', 'WH', 'OY', 'LS', 'RN'], // Longford, Westmeath, Offaly, Laois, Roscommon
   },
   topPopulated: {
     name: 'Top 5 by Population',
-    counties: ['DCC', 'CK', 'GY', 'LK', 'KE'], // DCC stays, COR→CK, GAL→GY, LIM→LK, KIL→KE
+    description: 'Most populated counties and cities',
+    counties: ['DCC', 'CK', 'GY', 'LK', 'KE'], // Dublin City, Cork, Galway, Limerick, Kildare
+  },
+  highTraffic: {
+    name: 'High Traffic Areas',
+    description: 'Counties with major transport corridors',
+    counties: ['DCC', 'CK', 'GY', 'KE', 'MH', 'LH'], // Major corridors and commuter belt
+  },
+  rural: {
+    name: 'Rural Counties',
+    description: 'Predominantly rural counties',
+    counties: ['LM', 'RN', 'MN', 'LS', 'CW', 'LD'], // Less urbanized counties
+  },
+  coastalCounties: {
+    name: 'Coastal Counties',
+    description: 'Counties with significant coastline',
+    counties: ['DL', 'SO', 'MO', 'GY', 'CE', 'CK', 'KY', 'WD', 'WX', 'WW', 'DCC', 'LH'], 
+  },
+  borderCounties: {
+    name: 'Border Counties',
+    description: 'Counties along the Northern Ireland border',
+    counties: ['DL', 'LM', 'CN', 'MN', 'LH'], // Counties that border Northern Ireland
   },
 };

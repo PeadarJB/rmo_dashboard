@@ -14,43 +14,10 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAnalyticsStore } from '@/store/useAnalyticsStore';
 import { DEFAULT_CHART_FILTERS } from '@/store/slices/chartFiltersSlice';
-import { useComponentLogger } from '@/utils/logger';
-import type { ChartMetric } from '@/store/slices/chartFiltersSlice';
+import { useComponentLogger } from '@/utils/logger'; 
+import { COUNTY_NAMES } from '@/utils/countyLabels'; 
+import type { ChartMetric } from '@/store/slices/chartFiltersSlice'; 
 import styles from './ActiveFilterChips.module.css';
-
-const COUNTY_NAMES: Record<string, string> = {
-  CAR: 'Carlow',
-  CAV: 'Cavan',
-  CLA: 'Clare',
-  COR: 'Cork',
-  CORKCITY: 'Cork City',
-  DCC: 'Dublin City',
-  DLRD: 'Dún Laoghaire-Rathdown',
-  DON: 'Donegal',
-  FIN: 'Fingal',
-  GALCITY: 'Galway City',
-  GAL: 'Galway',
-  KER: 'Kerry',
-  KIL: 'Kildare',
-  KIK: 'Kilkenny',
-  LAO: 'Laois',
-  LEI: 'Leitrim',
-  LIM: 'Limerick',
-  LON: 'Longford',
-  LOU: 'Louth',
-  MAY: 'Mayo',
-  MEA: 'Meath',
-  MON: 'Monaghan',
-  OFF: 'Offaly',
-  ROS: 'Roscommon',
-  SLI: 'Sligo',
-  STHDUB: 'South Dublin',
-  TIP: 'Tipperary',
-  WAT: 'Waterford',
-  WES: 'Westmeath',
-  WEX: 'Wexford',
-  WIC: 'Wicklow',
-};
 
 interface FilterChip {
   id: string;
