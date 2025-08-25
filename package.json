@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@ant-design/icons": "^6.0.0",
+    "@aws-amplify/backend": "^1.16.1",
+    "@aws-amplify/backend-cli": "^1.8.0",
     "@aws-amplify/ui-react": "^6.11.2",
     "@sentry/react": "^10.2.0",
     "antd": "^5.26.7",
