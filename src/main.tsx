@@ -4,18 +4,20 @@ import { Amplify } from 'aws-amplify';
 import { BrowserRouter } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
 import App from './App.tsx';
-import { appTheme } from './theme/appTheme'; // Corrected import path
+// Fixed: Use named import for lightTheme (or darkTheme if you prefer)
+import { lightTheme } from './theme/appTheme';
 import { ThemeTokenBridge } from './theme/ThemeTokenBridge.tsx';
-import { awsExports } from './config/aws.config.ts'; // Corrected named import
+// Fixed: Use named import for AWS_CONFIG
+import { AWS_CONFIG } from './config/aws.config.ts';
 import './index.css';
 
 // Configure AWS Amplify
 Amplify.configure({
   Storage: {
-    // Corrected configuration key from AWSS3 to S3
+    // Using the correct key 'S3' for Amplify v6+
     S3: {
-      bucket: awsExports.aws_s3_bucket_name,
-      region: awsExports.aws_s3_bucket_region,
+      bucket: AWS_CONFIG.storage.AWSS3.bucket,
+      region: AWS_CONFIG.storage.AWSS3.region,
     },
   },
 });
@@ -23,10 +25,10 @@ Amplify.configure({
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <ConfigProvider theme={appTheme}>
+      <ConfigProvider theme={lightTheme}>
         <ThemeTokenBridge />
         <App />
-      </Config-Provider>
+      </ConfigProvider> 
     </BrowserRouter>
   </React.StrictMode>,
 );
