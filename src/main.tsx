@@ -1,60 +1,32 @@
-// src/main.tsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App.tsx';
-import './index.css';
 import { Amplify } from 'aws-amplify';
-import { AWS_CONFIG, validateAWSConfig } from './config/aws.config';
-
-// Validate configuration in development
-if (import.meta.env.DEV) {
-  const validation = validateAWSConfig();
-  if (!validation.valid) {
-    console.error('❌ AWS Configuration Errors:', validation.errors);
-  } else {
-    console.log('✅ AWS Configuration Valid');
-  }
-}
+import { BrowserRouter } from 'react-router-dom';
+import { ConfigProvider } from 'antd';
+import App from './App.tsx';
+import { appTheme } from './theme/appTheme'; // Corrected import path
+import { ThemeTokenBridge } from './theme/ThemeTokenBridge.tsx';
+import { awsExports } from './config/aws.config.ts'; // Corrected named import
+import './index.css';
 
 // Configure AWS Amplify
-const awsconfig = {
-  Auth: {
-    Cognito: {
-      userPoolId: AWS_CONFIG.auth.userPoolId,
-      userPoolClientId: AWS_CONFIG.auth.userPoolClientId,
-      identityPoolId: AWS_CONFIG.auth.identityPoolId,
-      loginWith: {
-        email: true,
-        username: true,
-      },
-      signUpVerificationMethod: 'code' as const,
-      userAttributes: {
-        email: {
-          required: true,
-        },
-      },
-      passwordFormat: {
-        minLength: 8,
-        requireLowercase: true,
-        requireUppercase: true,
-        requireNumbers: true,
-        requireSpecialCharacters: true,
-      },
-    },
-  },
+Amplify.configure({
   Storage: {
+    // Corrected configuration key from AWSS3 to S3
     S3: {
-      bucket: AWS_CONFIG.storage.AWSS3.bucket,
-      region: AWS_CONFIG.storage.AWSS3.region,
-      accessLevel: 'guest',
+      bucket: awsExports.aws_s3_bucket_name,
+      region: awsExports.aws_s3_bucket_region,
     },
   },
-};
-
-Amplify.configure(awsconfig);
+});
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
-  </React.StrictMode>
+    <BrowserRouter>
+      <ConfigProvider theme={appTheme}>
+        <ThemeTokenBridge />
+        <App />
+      </Config-Provider>
+    </BrowserRouter>
+  </React.StrictMode>,
 );
