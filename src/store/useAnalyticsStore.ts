@@ -4,7 +4,8 @@ import { produce } from 'immer';
 import type { 
   AnalyticsState, 
   InitialStateValues,
-  SetCalculationResultsPayload 
+  SetCalculationResultsPayload,
+  LoginPayload 
 } from '@/types/store';
 import type { SurveyYear } from '@/types/data';
 import { DEFAULT_THRESHOLDS, DEFAULT_COSTS } from '@/types/calculations';
@@ -50,8 +51,14 @@ const initialState: InitialStateValues & { chartFilters: ChartFiltersState } = {
       calculationId: null,
     },
   },
+  // MODIFIED: User slice for new auth flow
   user: {
     isAuthenticated: false,
+    profile: null,
+    idToken: null,
+    accessToken: null,
+    refreshToken: null,
+    expiresAt: null,
     preferences: {},
   },
   chartFilters: DEFAULT_CHART_FILTERS,
@@ -63,112 +70,152 @@ export const useAnalyticsStore = create<ExtendedAnalyticsState>((set) => ({
 
   // ============= DATA ACTIONS =============
   setSummaryData: (data) =>
-    set(produce((state: ExtendedAnalyticsState) => {
-      state.data.summaryData = data;
-    })),
+    set(
+      produce((state: ExtendedAnalyticsState) => {
+        state.data.summaryData = data;
+      }),
+    ),
 
   setFullDataset: (data) =>
-    set(produce((state: ExtendedAnalyticsState) => {
-      state.data.fullDataset = data;
-    })),
+    set(
+      produce((state: ExtendedAnalyticsState) => {
+        state.data.fullDataset = data;
+      }),
+    ),
 
   clearData: () =>
-    set(produce((state: ExtendedAnalyticsState) => {
-      state.data.summaryData = null;
-      state.data.fullDataset = null;
-      state.ui.loadError = null;
-      state.ui.loadProgress = {
-        stage: 'idle' as const,
-        summaryLoaded: false,
-        fullLoaded: false,
-        progress: 0,
-      };
-      state.ui.isLoading = false;
-    })),
+    set(
+      produce((state: ExtendedAnalyticsState) => {
+        state.data.summaryData = null;
+        state.data.fullDataset = null;
+        state.ui.loadError = null;
+        state.ui.loadProgress = {
+          stage: 'idle' as const,
+          summaryLoaded: false,
+          fullLoaded: false,
+          progress: 0,
+        };
+        state.ui.isLoading = false;
+      }),
+    ),
 
   // ============= UI ACTIONS =============
   setLoadProgress: (progress) =>
-    set(produce((state: ExtendedAnalyticsState) => {
-      state.ui.loadProgress = progress;
-    })),
+    set(
+      produce((state: ExtendedAnalyticsState) => {
+        state.ui.loadProgress = progress;
+      }),
+    ),
 
   setLoadError: (error) =>
-    set(produce((state: ExtendedAnalyticsState) => {
-      state.ui.loadError = error;
-    })),
+    set(
+      produce((state: ExtendedAnalyticsState) => {
+        state.ui.loadError = error;
+      }),
+    ),
 
   setIsLoading: (loading) =>
-    set(produce((state: ExtendedAnalyticsState) => {
-      state.ui.isLoading = loading;
-    })),
+    set(
+      produce((state: ExtendedAnalyticsState) => {
+        state.ui.isLoading = loading;
+      }),
+    ),
 
   // ============= CALCULATION ACTIONS =============
   setCalculationResults: (payload: SetCalculationResultsPayload) =>
-    set(produce((state: ExtendedAnalyticsState) => {
-      state.cache.results = {
-        segments: payload.segments,
-        summary: payload.summary,
-        timestamp: payload.timestamp,
-        calculationId: payload.calculationId,
-      };
-    })),
+    set(
+      produce((state: ExtendedAnalyticsState) => {
+        state.cache.results = {
+          segments: payload.segments,
+          summary: payload.summary,
+          timestamp: payload.timestamp,
+          calculationId: payload.calculationId,
+        };
+      }),
+    ),
 
   clearCalculationResults: () =>
-    set(produce((state: ExtendedAnalyticsState) => {
-      state.cache.results = {
-        segments: null,
-        summary: null,
-        timestamp: null,
-        calculationId: null,
-      };
-    })),
+    set(
+      produce((state: ExtendedAnalyticsState) => {
+        state.cache.results = {
+          segments: null,
+          summary: null,
+          timestamp: null,
+          calculationId: null,
+        };
+      }),
+    ),
 
   // ============= PARAMETER ACTIONS =============
   updateThresholds: (newThresholds) =>
-    set(produce((state: ExtendedAnalyticsState) => {
-      // Deep merge each threshold category
-      Object.keys(newThresholds).forEach((key) => {
-        const thresholdKey = key as keyof typeof newThresholds;
-        if (newThresholds[thresholdKey]) {
-          Object.assign(
-            state.parameters.thresholds[thresholdKey],
-            newThresholds[thresholdKey]
-          );
-        }
-      });
-    })),
+    set(
+      produce((state: ExtendedAnalyticsState) => {
+        Object.keys(newThresholds).forEach((key) => {
+          const thresholdKey = key as keyof typeof newThresholds;
+          if (newThresholds[thresholdKey]) {
+            Object.assign(
+              state.parameters.thresholds[thresholdKey],
+              newThresholds[thresholdKey],
+            );
+          }
+        });
+      }),
+    ),
 
   updateCosts: (newCosts) =>
-    set(produce((state: ExtendedAnalyticsState) => {
-      Object.assign(state.parameters.costs, newCosts);
-    })),
+    set(
+      produce((state: ExtendedAnalyticsState) => {
+        Object.assign(state.parameters.costs, newCosts);
+      }),
+    ),
 
   setSelectedYear: (year) =>
-    set(produce((state: ExtendedAnalyticsState) => {
-      state.parameters.selectedYear = year;
-    })),
+    set(
+      produce((state: ExtendedAnalyticsState) => {
+        state.parameters.selectedYear = year;
+      }),
+    ),
 
   setSelectedCounties: (counties) =>
-    set(produce((state: ExtendedAnalyticsState) => {
-      state.parameters.selectedCounties = counties;
-    })),
+    set(
+      produce((state: ExtendedAnalyticsState) => {
+        state.parameters.selectedCounties = counties;
+      }),
+    ),
 
   resetParameters: () =>
+    set(
+      produce((state: ExtendedAnalyticsState) => {
+        state.parameters = {
+          thresholds: DEFAULT_THRESHOLDS,
+          costs: DEFAULT_COSTS,
+          selectedYear: '2018' as SurveyYear,
+          selectedCounties: [],
+        };
+      }),
+    ),
+
+  // ============= USER ACTIONS (REWRITTEN) =============
+  login: (payload: LoginPayload) =>
     set(produce((state: ExtendedAnalyticsState) => {
-      state.parameters = {
-        thresholds: DEFAULT_THRESHOLDS,
-        costs: DEFAULT_COSTS,
-        selectedYear: '2018' as SurveyYear,
-        selectedCounties: [],
-      };
+      state.user.isAuthenticated = true;
+      state.user.profile = payload.profile;
+      state.user.idToken = payload.idToken;
+      state.user.accessToken = payload.accessToken;
+      state.user.refreshToken = payload.refreshToken;
+      state.user.expiresAt = payload.expiresAt;
     })),
 
-  // ============= USER ACTIONS =============
-  setAuthenticated: (authenticated) =>
+  logout: () =>
     set(produce((state: ExtendedAnalyticsState) => {
-      state.user.isAuthenticated = authenticated;
+      state.user.isAuthenticated = false;
+      state.user.profile = null;
+      state.user.idToken = null;
+      state.user.accessToken = null;
+      state.user.refreshToken = null;
+      state.user.expiresAt = null;
     })),
-
+  
   updatePreferences: (preferences) =>
     set(produce((state: ExtendedAnalyticsState) => {
       Object.assign(state.user.preferences, preferences);

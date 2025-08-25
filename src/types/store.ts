@@ -1,4 +1,5 @@
 // src/types/store.ts
+// src/types/store.ts
 import type { 
   RoadSegmentData, 
   SummaryData, 
@@ -17,6 +18,21 @@ import type {
   ChartMetric,
   ChartGroupBy,
 } from '@/store/slices/chartFiltersSlice';
+
+// ============= NEW: USER PROFILE AND AUTH PAYLOAD TYPES =============
+export interface UserProfile {
+  email: string;
+  name?: string;
+  groups?: string[];
+}
+
+export interface LoginPayload {
+  profile: UserProfile;
+  idToken: string;
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: number;
+}
 
 // ============= SLICE INTERFACES =============
 
@@ -42,8 +58,14 @@ export interface CacheSlice {
   results: CalculationResults;
 }
 
+// MODIFIED: UserSlice to handle new auth state
 export interface UserSlice {
   isAuthenticated: boolean;
+  profile: UserProfile | null;
+  idToken: string | null;
+  accessToken: string | null;
+  refreshToken: string | null;
+  expiresAt: number | null;
   preferences: {
     theme?: 'light' | 'dark';
     defaultView?: 'map' | 'table';
@@ -93,8 +115,9 @@ export interface AnalyticsState {
   setSelectedCounties: (counties: string[]) => void;
   resetParameters: () => void;
 
-  // ============= USER ACTIONS =============
-  setAuthenticated: (authenticated: boolean) => void;
+  // ============= MODIFIED: USER ACTIONS =============
+  login: (payload: LoginPayload) => void;
+  logout: () => void;
   updatePreferences: (preferences: Partial<UserSlice['preferences']>) => void;
 
   // ============= CHART FILTER ACTIONS =============
@@ -113,6 +136,8 @@ export interface AnalyticsState {
   resetChartFilters: () => void;
   setChartFiltersFromURL: (params: Partial<ChartFiltersState>) => void;
 }
+
+// ============= (rest of the file remains the same) =============
 
 // ============= COMPUTED SELECTORS =============
 
