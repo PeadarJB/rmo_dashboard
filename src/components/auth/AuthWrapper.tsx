@@ -30,11 +30,11 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
   }, [isAuthenticated, isLoading, location.pathname]);
 
   // Development-only bypass (kept for convenience during development)
-  const skipAuth = import.meta.env.VITE_SKIP_AUTH === 'false';
-  if (import.meta.env.DEV && skipAuth) {
-    logger.warn('AuthWrapper', 'Authentication bypassed (DEV MODE with VITE_SKIP_AUTH=true)');
-    return <>{children}</>;
-  }
+  //const skipAuth = import.meta.env.VITE_SKIP_AUTH === 'false';
+  //if (import.meta.env.DEV && skipAuth) {
+  //  logger.warn('AuthWrapper', 'Authentication bypassed (DEV MODE with VITE_SKIP_AUTH=true)');
+ //   return <>{children}</>;
+  //}
 
   // Show loading screen while checking authentication status
   if (isLoading) {
