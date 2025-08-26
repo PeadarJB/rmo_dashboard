@@ -1,47 +1,40 @@
-import React, { ReactNode } from 'react';
-import { useLocation, Navigate } from 'react-router-dom';
-import { useAppInitializer } from '../../hooks';
-import { LoadingScreen } from '../layout';
+// src/components/auth/AuthWrapper.tsx
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext'; // Assuming you created this in Phase 5
+import { LoadingScreen } from '@/components/layout';
 
 interface AuthWrapperProps {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
-const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
-  // Correctly destructure isLoading from the hook's return value
-  const { isLoading, error } = useAppInitializer();
+/**
+ * This component now acts as a Protected Route.
+ * It checks the authentication state from the AuthContext and handles redirects.
+ * 1. Shows a loading screen while the session is being verified.
+ * 2. If the user is not authenticated, it redirects them to the /login page.
+ * 3. If the user is authenticated, it renders the protected child components.
+ */
+export function AuthWrapper({ children }: AuthWrapperProps) {
+  const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
-  const skipAuth = import.meta.env.VITE_SKIP_AUTH === 'true';
-
-  if (skipAuth) {
-    // Use isLoading instead of isInitialized
-    if (isLoading) {
-      // Removed the invalid 'message' prop
-      return <LoadingScreen />;
-    }
+  // Development-only flag to bypass authentication for easier testing
+  const VITE_SKIP_AUTH = import.meta.env.VITE_SKIP_AUTH === 'true';
+  if (import.meta.env.DEV && VITE_SKIP_AUTH) {
     return <>{children}</>;
   }
 
-  const isAuthenticated = false; // Placeholder for new logic
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  if (error) {
-    // You can enhance LoadingScreen to accept an error message if needed,
-    // but for now, we'll show a generic one.
-    console.error('Initialization Error:', error);
-    return <LoadingScreen />;
-  }
-
-  // Use isLoading for the loading check
+  // While checking for a session, show a full-page loader
   if (isLoading) {
     return <LoadingScreen />;
   }
 
-  return <>{children}</>;
-};
+  // If not authenticated, redirect to the login page
+  if (!isAuthenticated) {
+    // Pass the original location to redirect back after successful login
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
-export default AuthWrapper;
+  // If authenticated, render the requested component
+  return <>{children}</>;
+}

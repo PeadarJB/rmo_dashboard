@@ -1,34 +1,27 @@
+// src/main.tsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { Amplify } from 'aws-amplify';
 import { BrowserRouter } from 'react-router-dom';
-import { ConfigProvider } from 'antd';
-import App from './App.tsx';
-// Fixed: Use named import for lightTheme (or darkTheme if you prefer)
-import { lightTheme } from './theme/appTheme';
-import { ThemeTokenBridge } from './theme/ThemeTokenBridge.tsx';
-// Fixed: Use named import for AWS_CONFIG
-import { AWS_CONFIG } from './config/aws.config.ts';
+import App from './App'; // CORRECTED: Use default import for App
+import { AuthProvider } from './contexts/AuthContext';
 import './index.css';
 
-// Configure AWS Amplify
+import { Amplify } from 'aws-amplify';
+
+// CORRECTED: Updated Amplify Storage configuration for v6
 Amplify.configure({
   Storage: {
-    // Using the correct key 'S3' for Amplify v6+
-    S3: {
-      bucket: AWS_CONFIG.storage.AWSS3.bucket,
-      region: AWS_CONFIG.storage.AWSS3.region,
-    },
+    bucket: import.meta.env.VITE_S3_BUCKET,
+    region: import.meta.env.VITE_AWS_REGION,
   },
 });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <ConfigProvider theme={lightTheme}>
-        <ThemeTokenBridge />
+      <AuthProvider>
         <App />
-      </ConfigProvider> 
+      </AuthProvider>
     </BrowserRouter>
-  </React.StrictMode>,
+  </React.StrictMode>
 );
