@@ -5,6 +5,8 @@ import {
   validateSummaryFile,
   type ValidatedSummaryFile 
 } from '@/utils/validators';
+import { fetchFromS3 } from './s3Service';
+import { logger } from '@/utils/logger';
 
 // Define the structure of the cached data
 interface CacheEntry {
@@ -16,7 +18,26 @@ interface CacheEntry {
 const CACHE_VERSION = '1.0.0';
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
-export class DataLoaderService {
+// S3 file names
+const SUMMARY_FILE = 'road_network_summary_2.json';
+const FULL_DATA_FILE = 'road_network_full_2.json';
+
+// Local file paths (fallback)
+const LOCAL_SUMMARY_PATH = '/data/road_network_summary_2.json';
+const LOCAL_FULL_PATH = '/data/road_network_full_2.json';
+
+// Fallback to local files if S3 fails (development only)
+const USE_LOCAL_FALLBACK = import.meta.env.DEV;
+
+export interface DataLoaderService {
+  loadSummaryData(onProgress?: (progress: DataLoadProgress) => void): Promise<SummaryData>;
+  loadFullDataset(onProgress?: (progress: DataLoadProgress) => void): Promise<RoadSegmentData[]>;
+  loadTwoStage(onProgress?: (progress: DataLoadProgress) => void): Promise<{ summary: SummaryData; full: RoadSegmentData[] }>;
+  clearCache(): void;
+  abort(): void;
+}
+
+export class DataLoaderServiceImpl implements DataLoaderService {
   private db: IDBDatabase | null = null;
   private controller: AbortController | null = null;
 
@@ -77,48 +98,45 @@ export class DataLoaderService {
     });
   }
 
-  private async fetchWithRetry(
-    url: string,
-    retries = 3,
-    delay = 1000
-  ): Promise<Response> {
-    this.controller = new AbortController();
-    
-    for (let i = 0; i < retries; i++) {
-      try {
-        const response = await fetch(url, {
-          signal: this.controller.signal,
-          headers: {
-            'Accept': 'application/json',
-            'Accept-Encoding': 'gzip, deflate',
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        // Verify we're getting JSON
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          throw new Error(`Expected JSON, got ${contentType}`);
-        }
-
-        return response;
-      } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') {
-          throw error;
-        }
-        
-        if (i === retries - 1) {
-          throw error;
-        }
-        
-        await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+  /**
+   * Load data with S3 primary and local fallback
+   */
+  private async loadFromS3OrFallback<T>(
+    s3FileName: string,
+    localPath: string,
+    validator?: (data: any) => T
+  ): Promise<T> {
+    try {
+      logger.info('dataLoader', `Attempting to load ${s3FileName} from S3...`);
+      const data = await fetchFromS3<T>(s3FileName);
+      
+      // Validate if validator provided
+      if (validator) {
+        return validator(data);
       }
+      return data;
+    } catch (error) {
+      logger.error('dataLoader', `Failed to load from S3: ${s3FileName}`, { error });
+      
+      // In development, fall back to local files
+      if (USE_LOCAL_FALLBACK) {
+        logger.warn('dataLoader', `Falling back to local file: ${localPath}`);
+        const response = await fetch(localPath);
+        if (!response.ok) {
+          throw new Error(`Failed to load local file: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        // Validate if validator provided
+        if (validator) {
+          return validator(data);
+        }
+        return data;
+      }
+      
+      // In production, re-throw the error
+      throw error;
     }
-    
-    throw new Error('Max retries reached');
   }
 
   /**
@@ -180,21 +198,25 @@ export class DataLoaderService {
     });
 
     try {
-      const response = await this.fetchWithRetry('/data/road_network_summary_2.json');
-      const data = await response.json();
-      
-      // Validate and parse the complex summary structure
-      const validatedFile = validateSummaryFile(data);
-      if (!validatedFile) {
-        throw new Error('Invalid summary file structure');
-      }
+      // Load from S3 or fallback to local
+      const summaryFile = await this.loadFromS3OrFallback<ValidatedSummaryFile>(
+        SUMMARY_FILE,
+        LOCAL_SUMMARY_PATH,
+        (data) => {
+          const validated = validateSummaryFile(data);
+          if (!validated) {
+            throw new Error('Summary file validation failed.');
+          }
+          return validated;
+        }
+      );
 
-      // Extract simplified summary for UI
-      const summary = this.extractSummaryTotals(validatedFile);
+      // Extract and process the data
+      const summaryData = this.extractSummaryTotals(summaryFile);
 
       // Cache the result
       await this.saveToCache(cacheKey, {
-        data: summary,
+        data: summaryData,
         timestamp: Date.now(),
         version: CACHE_VERSION,
       });
@@ -203,10 +225,10 @@ export class DataLoaderService {
         stage: 'complete',
         summaryLoaded: true,
         fullLoaded: false,
-        progress: 100,
+        progress: 50,
       });
 
-      return summary;
+      return summaryData;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       onProgress?.({
@@ -223,9 +245,9 @@ export class DataLoaderService {
   async loadFullDataset(
     onProgress?: (progress: DataLoadProgress) => void
   ): Promise<RoadSegmentData[]> {
-    const cacheKey = 'full-dataset';
+    const cacheKey = 'full';
 
-    // Check cache
+    // Check cache first
     const cached = await this.getFromCache(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
       onProgress?.({
@@ -241,45 +263,20 @@ export class DataLoaderService {
       stage: 'loading-full',
       summaryLoaded: true,
       fullLoaded: false,
-      progress: 0,
+      progress: 50,
     });
 
     try {
-      const response = await this.fetchWithRetry('/data/road_network_full_2.json');
-      
-      // Stream parsing for large file
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let chunks = '';
-      let bytesReceived = 0;
-      const contentLength = parseInt(response.headers.get('Content-Length') || '0');
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          
-          if (done) break;
-          
-          bytesReceived += value.length;
-          chunks += decoder.decode(value, { stream: true });
-          
-          const progress = contentLength ? (bytesReceived / contentLength) * 100 : 50;
-          onProgress?.({
-            stage: 'loading-full',
-            summaryLoaded: true,
-            fullLoaded: false,
-            progress: Math.min(progress, 90), // Cap at 90% until parsing
-          });
-        }
-      }
-
-      // Parse and validate
-      const parsed = JSON.parse(chunks);
-      const validated = FullDatasetSchema.parse(parsed);
+      // Load from S3 or fallback to local
+      const fullData = await this.loadFromS3OrFallback<RoadSegmentData[]>(
+        FULL_DATA_FILE,
+        LOCAL_FULL_PATH,
+        (data) => FullDatasetSchema.parse(data)
+      );
 
       // Cache the result
       await this.saveToCache(cacheKey, {
-        data: validated,
+        data: fullData,
         timestamp: Date.now(),
         version: CACHE_VERSION,
       });
@@ -291,7 +288,7 @@ export class DataLoaderService {
         progress: 100,
       });
 
-      return validated;
+      return fullData;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       onProgress?.({
@@ -326,5 +323,5 @@ export class DataLoaderService {
   }
 }
 
-// Singleton instance
-export const dataLoader = new DataLoaderService();
+// Singleton instance - maintains compatibility with existing code
+export const dataLoader = new DataLoaderServiceImpl();
