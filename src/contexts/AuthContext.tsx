@@ -7,7 +7,6 @@ import {
   useCallback,
 } from 'react';
 import { useAnalyticsStore } from '@/store/useAnalyticsStore';
-// CORRECTED: Import named exports directly
 import { getTokens, clearTokens } from '@/utils/tokenManager';
 import { signOut } from '@/services/authService';
 import { UserProfile } from '@/types/store';
@@ -28,7 +27,6 @@ interface AuthProviderProps {
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isLoading, setIsLoading] = useState(true);
-  // CORRECTED: Access state properties from their nested location
   const { login, logout: logoutFromStore } = useAnalyticsStore();
   const isAuthenticated = useAnalyticsStore((state) => state.user.isAuthenticated);
   const userProfile = useAnalyticsStore((state) => state.user.profile);
@@ -42,17 +40,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     const initializeSession = async () => {
       const tokens = getTokens();
-      if (tokens && tokens.idToken) {
+      // FIXED: Use snake_case property names to match AuthTokens interface
+      if (tokens && tokens.id_token) {
         try {
-          const decoded: { exp: number; email: string; name?: string } = jwtDecode(tokens.idToken);
+          const decoded: { exp: number; email: string; name?: string } = jwtDecode(tokens.id_token);
           const expiresAt = decoded.exp * 1000;
 
           if (expiresAt > Date.now()) {
             login({
               profile: { email: decoded.email, name: decoded.name },
-              idToken: tokens.idToken,
-              accessToken: tokens.accessToken,
-              refreshToken: tokens.refreshToken,
+              idToken: tokens.id_token,           // Fixed: was tokens.idToken
+              accessToken: tokens.access_token,    // Fixed: was tokens.accessToken
+              refreshToken: tokens.refresh_token,  // Fixed: was tokens.refreshToken
               expiresAt,
             });
           } else {
@@ -69,7 +68,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     initializeSession();
   }, [login, handleLogout]);
 
-  // CORRECTED: Pass the correct user profile object to the context value
   const value = {
     isAuthenticated,
     isLoading,
