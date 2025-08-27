@@ -3,7 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import { ConfigProvider, Spin } from 'antd';
 import { logger } from './utils/logger';
 import { AuthWrapper } from './components/auth';
-import { Dashboard } from './components/layout';
+import { Dashboard, LoadingScreen } from './components/layout';
 import LoginPage from './pages/LoginPage';
 import CallbackPage from './pages/CallbackPage';
 import { KPISummary } from './components/common/KPISummary';
