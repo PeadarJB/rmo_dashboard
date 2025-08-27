@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAnalyticsStore } from '@/store/useAnalyticsStore';
 import { dataLoader } from '@/services/dataLoader';
 import { useCalculation } from './useCalculation';
-import { logger } from '@/utils/logger';
+import { logger } from '@/utils/logger'; 
 
 /**
  * This hook manages the initial data loading and calculation process
@@ -14,7 +14,28 @@ export const useAppInitializer = () => {
   const [progressMessage, setProgressMessage] = useState('Initializing application...');
 
   const isAuthenticated = useAnalyticsStore((state) => state.user.isAuthenticated);
-  const hasData = useAnalyticsStore((state) => !!state.data.fullDataset);
+  const hasData = useAnalyticsStore((state) => {
+    const { summaryData, fullDataset } = state.data;
+
+    // Helper to check for actual content, not just truthiness
+    const isNonEmpty = (data: unknown) => {
+      if (Array.isArray(data)) return data.length > 0;
+      if (data && typeof data === 'object') return Object.keys(data as Record<string, unknown>).length > 0;
+      return Boolean(data);
+    };
+
+    const result = isNonEmpty(summaryData) || isNonEmpty(fullDataset);
+    
+    // This debug log is crucial for verification
+    logger.info('useAppInitializer', 'Computed hasData check', {
+      hasSummary: isNonEmpty(summaryData),
+      hasFull: isNonEmpty(fullDataset),
+      finalResult: result 
+    });
+
+    return result;
+  });
+
   const setSummaryData = useAnalyticsStore((state) => state.setSummaryData);
   const setFullDataset = useAnalyticsStore((state) => state.setFullDataset);
   const { calculate } = useCalculation();
