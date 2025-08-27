@@ -1,82 +1,47 @@
 // src/components/charts/CategoryBreakdownChart.tsx
-import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { Card, Button, Space, Empty, Spin, Select, Breadcrumb, Tooltip, theme, Grid, Badge } from 'antd';
-import {
-  BarChartOutlined,
+// Updated sections with mobile-responsive county labels
+
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Card, Empty, Spin, Space, Button, Select, Tooltip, Badge, Breadcrumb, Grid } from 'antd';
+import { 
+  BarChartOutlined, 
+  DownloadOutlined, 
+  ExpandOutlined, 
+  ArrowUpOutlined, 
+  ArrowDownOutlined,
   SortAscendingOutlined,
-  SortDescendingOutlined,
-  DownloadOutlined,
-  ArrowLeftOutlined,
-  PercentageOutlined,
+  PercentageOutlined
 } from '@ant-design/icons';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip as ChartTooltip,
-  Legend,
-  ChartOptions,
-  ChartData,
-} from 'chart.js';
 import { Bar } from 'react-chartjs-2';
-import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useAnalyticsStore } from '@/store/useAnalyticsStore';
-import { useComponentLogger, usePerformanceTimer } from '@/utils/logger';
+import type { ChartOptions, TooltipItem } from 'chart.js';
+import { useAnalyticsStore } from '@/store/analytics';
 import { countyUtils } from '@/utils/countyLabels';
-import { ActiveFilterChips } from './ActiveFilterChips';
-import type { MaintenanceCategory } from '@/types/calculations';
-import type { SurveyYear } from '@/types/data';
+import { logger } from '@/utils/logger';
+import type { MaintenanceCategory, SurveyYear } from '@/types/calculations';
+import { motion } from 'framer-motion';
+import { theme } from 'antd';
 import styles from './CategoryBreakdownChart.module.css';
-
-// Register Chart.js components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  ChartTooltip,
-  Legend,
-  ChartDataLabels
-);
-
-const { Option } = Select;
-const { useBreakpoint } = Grid;
 
 interface CategoryBreakdownChartProps {
   category?: MaintenanceCategory;
-  height?: number;
+  onBack: () => void;
   onCountyClick?: (county: string) => void;
-  onBack?: () => void;
+  height?: number;
 }
 
-// County names are now imported from centralized utility
-
-// Define categoryColors once using theme tokens
-const CATEGORY_COLORS: Record<MaintenanceCategory, string> = {
-  'Road Reconstruction': '#ff4d4f',         // could use token.colorError
-  'Structural Overlay': '#fa8c16',          // custom orange (AntD orange-6)
-  'Surface Restoration': '#fadb14',         // custom yellow
-  'Restoration of Skid Resistance': '#52c41a', // could use token.colorSuccess
-  'Routine Maintenance': '#1890ff',         // could use token.colorPrimary
-};
-
-export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
+export default function CategoryBreakdownChart({
   category,
-  height = 700, // Increased default height for better spacing
-  onCountyClick,
   onBack,
-}) => {
-  const logger = useComponentLogger('CategoryBreakdownChart');
-  const perfTimer = usePerformanceTimer('CategoryBreakdownRender');
-  const chartRef = useRef<ChartJS<'bar'>>(null);
+  onCountyClick,
+  height = 400,
+}: CategoryBreakdownChartProps) {
   const { token } = theme.useToken();
+  const chartRef = useRef<any>(null);
+  const { useBreakpoint } = Grid;
   const screens = useBreakpoint();
 
-  // ✅ FIXED: Now using chartFilters instead of parameters
-  const calculationResults = useAnalyticsStore(state => state.cache.results);
+  // Store state
+  const calculationResults = useAnalyticsStore(state => state.calculationResults);
   const chartFilters = useAnalyticsStore(state => state.chartFilters);
   const isLoading = useAnalyticsStore(state => state.ui.isLoading);
 
@@ -106,7 +71,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
     }
   }, [category]);
 
-  // ✅ FIXED: Now uses chartFilters for consistent data context
+  // Process and sort county data
   const sortedCountyData = useMemo(() => {
     if (!calculationResults.segments || calculationResults.segments.length === 0) {
       return [];
@@ -119,7 +84,6 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
       const yearData = segment.data[displayYear];
       if (!yearData || yearData.category !== selectedCategory) return;
 
-      // ✅ FIXED: Use chartFilters.selectedCounties instead of parameters
       if (chartFilters.selectedCounties.length > 0 && !chartFilters.selectedCounties.includes(segment.county)) {
         return;
       }
@@ -150,150 +114,78 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
         return sortOrder === 'asc' ? comparison : -comparison;
       });
     }
-    return data;
-  }, [calculationResults, selectedCategory, sortBy, sortOrder, chartFilters.primaryYear, chartFilters.selectedCounties]);
 
-  // ✅ ENHANCED: Calculate dynamic height based on number of counties for better spacing
-  const dynamicHeight = useMemo(() => {
-    const baseHeight = 300;
-    const minBarHeight = 35; // Minimum height per bar for good spacing
-    const calculatedHeight = Math.max(baseHeight, sortedCountyData.length * minBarHeight);
-    return Math.min(calculatedHeight, height); // Don't exceed provided height
-  }, [sortedCountyData.length, height]);
+    // Limit to top 20 for readability
+    return data.slice(0, 20);
+  }, [calculationResults.segments, selectedCategory, sortBy, sortOrder, chartFilters]);
 
-  // Process chart data with comparison support
-  const chartData = useMemo((): ChartData<'bar'> | null => {
-    perfTimer.start();
+  // Calculate dynamic height based on number of counties
+  const dynamicHeight = Math.max(400, sortedCountyData.length * 30);
 
-    if (sortedCountyData.length === 0) {
-      perfTimer.end();
-      return null;
-    }
+  // Prepare chart data
+  const chartData = useMemo(() => {
+    if (!sortedCountyData.length) return null;
 
-    // Calculate total for percentage view
-    const totalCost = sortedCountyData.reduce((sum, item) => sum + item.cost, 0);
-
-    // Prepare chart data - always use county codes for better spacing
-    const labels = sortedCountyData.map(item => item.county);
-
-    const datasets = [];
-
-    // Primary year data
-    const primaryData = sortedCountyData.map(item => {
-      if (viewMode === 'percentage' && totalCost > 0) {
-        return (item.cost / totalCost) * 100;
-      }
-      return item.cost / 1e6; // Convert to millions
-    });
-
-    const color = CATEGORY_COLORS[selectedCategory];
-
-    datasets.push({
-      label: chartFilters.primaryYear,
-      data: primaryData,
-      backgroundColor: color,
-      borderColor: color,
-      borderWidth: 1,
-      barPercentage: 0.6, // Reduced from 0.8 for more spacing
-      categoryPercentage: chartFilters.compareYear ? 0.7 : 0.5, // Reduced for more spacing
-    });
-
-    // ✅ NEW: Comparison year support
-    if (chartFilters.compareYear && chartFilters.isComparisonMode) {
-      const compareYearData: Record<string, { cost: number }> = {};
-      
-      calculationResults.segments?.forEach(segment => {
-        const yearData = segment.data[chartFilters.compareYear as SurveyYear];
-        if (!yearData || yearData.category !== selectedCategory) return;
-
-        if (chartFilters.selectedCounties.length > 0 && !chartFilters.selectedCounties.includes(segment.county)) {
-          return;
-        }
-
-        if (!compareYearData[segment.county]) {
-          compareYearData[segment.county] = { cost: 0 };
-        }
-
-        compareYearData[segment.county].cost += yearData.cost;
-      });
-
-      const compareData = sortedCountyData.map(item => {
-        const compareCountyData = compareYearData[item.county];
-        if (!compareCountyData) return 0;
-
-        if (viewMode === 'percentage') {
-          const compareTotalCost = Object.values(compareYearData).reduce((sum, data) => sum + data.cost, 0);
-          return compareTotalCost > 0 ? (compareCountyData.cost / compareTotalCost) * 100 : 0;
-        }
-        return compareCountyData.cost / 1e6;
-      });
-
-      datasets.push({
-        label: chartFilters.compareYear,
-        data: compareData,
-        backgroundColor: `${color}80`, // 50% opacity
-        borderColor: color,
-        borderWidth: 1,
-        barPercentage: 0.6, // Match primary dataset spacing
-        categoryPercentage: 0.7, // Match primary dataset spacing
-      });
-    }
-
-    perfTimer.end('chartUpdate');
+    const totalCost = sortedCountyData.reduce((sum, d) => sum + d.cost, 0);
 
     return {
-      labels,
-      datasets,
+      // MOBILE FIX: Use abbreviated codes on mobile, full names on desktop
+      labels: sortedCountyData.map(d => isMobile ? d.county : d.name),
+      datasets: [{
+        label: selectedCategory,
+        data: sortedCountyData.map(d => 
+          viewMode === 'percentage' 
+            ? (d.cost / totalCost) * 100 
+            : d.cost / 1000000 // Convert to millions
+        ),
+        backgroundColor: token.colorPrimary,
+        borderColor: token.colorPrimaryBorder,
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
     };
-  }, [sortedCountyData, viewMode, isMobile, selectedCategory, chartFilters, calculationResults, perfTimer]);
+  }, [sortedCountyData, selectedCategory, viewMode, token, isMobile]);
 
-  // Chart options for horizontal bar
-  const options: ChartOptions<'bar'> = useMemo(() => ({
+  // Chart options
+  const chartOptions: ChartOptions<'bar'> = useMemo(() => ({
     indexAxis: 'y' as const,
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: {
-        display: chartFilters.compareYear !== null && chartFilters.isComparisonMode,
-        position: 'top' as const,
-        labels: { color: token.colorTextSecondary },
-      },
+      legend: { display: false },
       tooltip: {
         callbacks: {
-          title: (context) => {
-            // Show full county name in tooltip title
-            const countyCode = context[0]?.label;
-            return countyCode ? countyUtils.getDisplayName(countyCode) : '';
+          // Always show full county name in tooltip for clarity
+          title: (items: TooltipItem<'bar'>[]) => {
+            const index = items[0].dataIndex;
+            const data = sortedCountyData[index];
+            return data ? data.name : '';
           },
-          label: (context) => {
+          label: (context: TooltipItem<'bar'>) => {
             const value = context.parsed.x;
-            const label = context.dataset.label ? `${context.dataset.label}: ` : '';
             if (viewMode === 'percentage') {
-              return `${label}${value.toFixed(1)}%`;
+              return `${selectedCategory}: ${value.toFixed(1)}%`;
             }
-            return `${label}€${value.toFixed(2)}M`;
+            return `${selectedCategory}: €${value.toFixed(2)}M`;
           },
-        },
-      },
-      datalabels: {
-        anchor: 'end',
-        align: 'end',
-        color: token.colorText,
-        formatter: (value: number) => {
-          if (viewMode === 'percentage') {
-            return `${value.toFixed(1)}%`;
+          afterLabel: (context: TooltipItem<'bar'>) => {
+            const index = context.dataIndex;
+            const data = sortedCountyData[index];
+            if (data) {
+              return [
+                `Segments: ${data.count}`,
+                `Length: ${(data.length / 1000).toFixed(1)} km`,
+                // Show county code if on mobile
+                isMobile ? `Code: ${data.county}` : ''
+              ].filter(Boolean);
+            }
+            return [];
           }
-          return `€${value.toFixed(1)}M`;
-        },
-        display: !isMobile, // Hide on mobile for clarity
-        font: {
-          size: 10,
-        },
-      },
+        }
+      }
     },
     scales: {
       x: {
-        beginAtZero: true,
         title: {
           display: true,
           text: viewMode === 'percentage' ? 'Percentage (%)' : 'Cost (€M)',
@@ -307,8 +199,9 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
           autoSkip: false,
           color: token.colorTextSecondary,
           font: {
-            size: isMobile ? 11 : 13, // Slightly larger since codes are shorter
-            family: 'monospace', // Monospace font for better code alignment
+            size: isMobile ? 11 : 13,
+            // Use monospace font for better alignment of abbreviated codes on mobile
+            family: isMobile ? 'monospace' : 'system-ui',
           },
         },
         grid: { display: false },
@@ -326,7 +219,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
         }
       }
     },
-  }), [viewMode, onCountyClick, token, isMobile, logger, sortedCountyData, chartFilters]);
+  }), [viewMode, onCountyClick, token, isMobile, logger, sortedCountyData, chartFilters, selectedCategory]);
 
   const handleCategoryChange = (value: MaintenanceCategory) => {
     logger.action('categoryChange', { from: selectedCategory, to: value });
@@ -356,7 +249,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
     }
   };
 
-  // ✅ NEW: Generate filter context for breadcrumb
+  // Generate filter context for breadcrumb
   const getFilterContext = () => {
     const context = [];
     if (chartFilters.primaryYear !== '2025') {
@@ -406,12 +299,6 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
     );
   }
 
-  const getTotalCost = (): number => {
-    if (!calculationResults.summary) return 0;
-    const yearData = calculationResults.summary[chartFilters.primaryYear];
-    return yearData?.by_category[selectedCategory]?.total_cost || 0;
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -422,7 +309,6 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
         className={styles.chartCard}
         title={
           <div className={styles.chartHeader}>
-            {/* ✅ ENHANCED: Breadcrumb with filter context */}
             <Breadcrumb>
               <Breadcrumb.Item>
                 <a onClick={onBack}>
@@ -455,11 +341,11 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
               style={{ width: 200 }}
               size="small"
             >
-              <Option value="Road Reconstruction">Road Reconstruction</Option>
-              <Option value="Structural Overlay">Structural Overlay</Option>
-              <Option value="Surface Restoration">Surface Restoration</Option>
-              <Option value="Restoration of Skid Resistance">Restoration of Skid</Option>
-              <Option value="Routine Maintenance">Routine Maintenance</Option>
+              <Select.Option value="Road Reconstruction">Road Reconstruction</Select.Option>
+              <Select.Option value="Structural Overlay">Structural Overlay</Select.Option>
+              <Select.Option value="Surface Restoration">Surface Restoration</Select.Option>
+              <Select.Option value="Restoration of Skid Resistance">Restoration of Skid</Select.Option>
+              <Select.Option value="Routine Maintenance">Routine Maintenance</Select.Option>
             </Select>
 
             <Tooltip title={viewMode === 'absolute' ? 'Show percentages' : 'Show values'}>
@@ -471,9 +357,9 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
               />
             </Tooltip>
 
-            <Tooltip title={`Sort by ${sortBy === 'value' ? 'name' : 'value'}`}>
+            <Tooltip title={`Sort ${sortBy === 'value' ? 'alphabetically' : 'by value'}`}>
               <Button
-                icon={<BarChartOutlined />}
+                icon={<SortAscendingOutlined />}
                 size="small"
                 onClick={handleSortByToggle}
               />
@@ -481,7 +367,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
 
             <Tooltip title={`Sort ${sortOrder === 'asc' ? 'descending' : 'ascending'}`}>
               <Button
-                icon={sortOrder === 'asc' ? <SortAscendingOutlined /> : <SortDescendingOutlined />}
+                icon={sortOrder === 'asc' ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
                 size="small"
                 onClick={handleSortToggle}
               />
@@ -494,63 +380,42 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
                 onClick={handleExport}
               />
             </Tooltip>
-
-            {onBack && (
-              <Button
-                icon={<ArrowLeftOutlined />}
-                size="small"
-                onClick={onBack}
-              >
-                Back
-              </Button>
-            )}
           </Space>
         }
       >
-        {/* ✅ NEW: Filter chips integration */}
-        <ActiveFilterChips className={styles.filterChips} />
-        
-        <div className={styles.chartContainerWrapper} style={{ height: dynamicHeight }}>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={selectedCategory}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              style={{ height: '100%' }}
-            >
-              <Bar ref={chartRef} options={options} data={chartData} />
-            </motion.div>
-          </AnimatePresence>
+        <div className={styles.chartContainerWrapper}>
+          <div style={{ height: dynamicHeight }}>
+            <Bar ref={chartRef} data={chartData} options={chartOptions} />
+          </div>
         </div>
 
         {/* Summary stats */}
-        {chartData && (
-          <div className={styles.summaryStats}>
-            <div className={styles.statItem}>
-              <span className={styles.statLabel}>Counties shown:</span>
-              <span className={styles.statValue}>
-                {chartData.labels?.length || 0}
-              </span>
-            </div>
-            <div className={styles.statItem}>
-              <span className={styles.statLabel}>Total cost:</span>
-              <span className={styles.statValue}>
-                €{(getTotalCost() / 1e6).toFixed(1)}M
-              </span>
-            </div>
-            {chartFilters.compareYear && (
-              <div className={styles.statItem}>
-                <span className={styles.statLabel}>Comparing:</span>
-                <span className={styles.statValue}>
-                  {chartFilters.primaryYear} vs {chartFilters.compareYear}
-                </span>
-              </div>
-            )}
+        <div className={styles.summaryStats}>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Total Counties:</span>
+            <span className={styles.statValue}>{sortedCountyData.length}</span>
           </div>
-        )}
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Total Cost:</span>
+            <span className={styles.statValue}>
+              €{(sortedCountyData.reduce((sum, d) => sum + d.cost, 0) / 1000000).toFixed(2)}M
+            </span>
+          </div>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Total Segments:</span>
+            <span className={styles.statValue}>
+              {sortedCountyData.reduce((sum, d) => sum + d.count, 0).toLocaleString()}
+            </span>
+          </div>
+          {isMobile && (
+            <div className={styles.statItem}>
+              <span className={styles.statLabel} style={{ fontSize: '11px', fontStyle: 'italic' }}>
+                Tip: County codes shown for space. Tap bars for full names.
+              </span>
+            </div>
+          )}
+        </div>
       </Card>
     </motion.div>
   );
-};
+}
