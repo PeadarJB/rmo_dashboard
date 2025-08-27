@@ -1,18 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
-import { logger } from './utils/logger';
-import { AuthWrapper } from './components/auth';
-import { Dashboard } from './components/layout';
-import LoginPage from './pages/LoginPage';
-import CallbackPage from './pages/CallbackPage';
-import { KPISummary } from './components/common/KPISummary';
-import { MaintenanceCategoryChart } from './components/charts/MaintenanceCategoryChart';
-import { CategoryBreakdownChart } from './components/charts/CategoryBreakdownChart';
-import type { MaintenanceCategory } from './types/calculations';
-import { lightTheme, darkTheme } from './theme/appTheme'; // Adjusted path
-import { ThemeTokenBridge } from './theme/ThemeTokenBridge';
-import styles from './components/layout/Dashboard.module.css';
+import { logger } from '@/utils/logger';
+import { AuthWrapper } from '@/components/auth';
+import { Dashboard } from '@/components/layout';
+import LoginPage from '@/pages/LoginPage';
+import CallbackPage from '@/pages/CallbackPage';
+import { KPISummary } from '@/components/common/KPISummary';
+import { MaintenanceCategoryChart } from '@/components/charts/MaintenanceCategoryChart';
+import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart';
+import type { MaintenanceCategory } from '@/types/calculations';
+import { lightTheme, darkTheme } from '@/theme/appTheme';
+import { ThemeTokenBridge } from '@/theme/ThemeTokenBridge';
+import styles from '@/components/layout/Dashboard.module.css';
 import './App.css';
 
 // This new component contains your original App's UI logic
@@ -70,7 +70,7 @@ const MainDashboard = () => {
                 setShowDrillDown(false);
                 setSelectedCategory(null);
               }}
-              onCountyClick={(county) => {
+              onCountyClick={(county: string) => {
                 logger.info('userAction', 'countyDrillDown', { county });
               }}
             />

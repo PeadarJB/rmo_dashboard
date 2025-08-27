@@ -1,5 +1,5 @@
 // src/pages/CallbackPage.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { exchangeCodeForTokens } from '../services/authService';
 import { saveTokens, AuthTokens } from '../utils/tokenManager';
@@ -24,8 +24,15 @@ const CallbackPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const login = useAnalyticsStore((state) => state.login);
 
+  const exchangeAttempted = useRef(false);
+
   useEffect(() => {
     const handleAuthCallback = async () => {
+      if (exchangeAttempted.current) {
+        return;
+      }
+      exchangeAttempted.current = true;
+      
       const params = new URLSearchParams(location.search);
       const code = params.get('code');
       const error = params.get('error');

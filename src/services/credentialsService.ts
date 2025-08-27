@@ -1,9 +1,10 @@
 // src/services/credentialsService.ts
-import { 
-  CognitoIdentityClient, 
-  GetIdCommand, 
-  GetCredentialsForIdentityCommand 
+import {
+  CognitoIdentityClient,
+  GetIdCommand,
+  GetCredentialsForIdentityCommand
 } from '@aws-sdk/client-cognito-identity';
+import { STSClient, GetCallerIdentityCommand } from '@aws-sdk/client-sts'; // Import STS Client
 import { getTokens } from '@/utils/tokenManager';
 import { logger } from '@/utils/logger';
 
@@ -61,8 +62,8 @@ export async function getAWSCredentials() {
       throw new Error('Failed to get identity ID from Cognito Identity Pool');
     }
 
-    logger.info('credentialsService', 'Identity ID obtained:', { 
-      identityId: identityResponse.IdentityId.substring(0, 10) + '...' 
+    logger.info('credentialsService', 'Identity ID obtained:', {
+      identityId: identityResponse.IdentityId.substring(0, 10) + '...'
     });
 
     // Step 2: Get temporary AWS credentials
@@ -90,6 +91,25 @@ export async function getAWSCredentials() {
     logger.info('credentialsService', 'AWS credentials obtained successfully', {
       expiresAt: credentialsResponse.Credentials.Expiration?.toISOString()
     });
+
+    // =================================================================
+    // NEW: Use STS to get and log the ARN of the assumed role
+    // =================================================================
+    try {
+      const stsClient = new STSClient({
+        region: REGION,
+        credentials: {
+          accessKeyId: cachedCredentials.accessKeyId,
+          secretAccessKey: cachedCredentials.secretAccessKey,
+          sessionToken: cachedCredentials.sessionToken,
+        }
+      });
+      const callerIdentity = await stsClient.send(new GetCallerIdentityCommand({}));
+      logger.info('credentialsService', 'Successfully assumed IAM Role:', { arn: callerIdentity.Arn });
+    } catch (stsError) {
+      logger.error('credentialsService', 'Failed to get caller identity from STS', { stsError });
+    }
+    // =================================================================
 
     return cachedCredentials;
 
