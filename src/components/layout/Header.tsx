@@ -35,7 +35,6 @@ import { useComponentLogger } from '@/utils/logger';
 import { useAnalyticsStore, selectors } from '@/store/useAnalyticsStore';
 import { useScrollDirection, useExport } from '@/hooks';
 import styles from './Header.module.css';
-import logo from '/img/RMO_Logo.png';
 
 const { useBreakpoint } = Grid;
 
@@ -184,7 +183,7 @@ export const Header: React.FC<HeaderProps> = ({
         <Tooltip title={isSiderVisible ? 'Hide Controls' : 'Show Controls'}>
           <Button type="text" icon={isSiderVisible ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />} onClick={onMenuClick} />
         </Tooltip>
-        <img src={logo} alt="RMO Logo" className={styles.logo} />
+        <img src="/img/RMO_Logo.png" alt="RMO Logo" className={styles.logo} />
         <h1 className={styles.title}>RMO Regional Road Survey</h1>
         {lastCalculation && <span className={styles.lastUpdate}>Last updated: {new Date(lastCalculation).toLocaleTimeString()}</span>}
       </div>
