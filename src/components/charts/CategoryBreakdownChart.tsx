@@ -20,8 +20,16 @@ import { motion } from 'framer-motion';
 import { theme } from 'antd';
 import styles from './CategoryBreakdownChart.module.css';
 
+const CATEGORY_COLORS: Record<MaintenanceCategory, string> = {
+  'Road Reconstruction': '#ff4d4f',
+  'Structural Overlay': '#fa8c16',
+  'Surface Restoration': '#fadb14',
+  'Restoration of Skid Resistance': '#52c41a',
+  'Routine Maintenance': '#1890ff',
+};
+
 // Define SurveyYear type locally if not exported from calculations
-type SurveyYear = '2021' | '2022' | '2023' | '2024' | '2025';
+type SurveyYear = '2011' | '2018' | '2025';
 
 interface CategoryBreakdownChartProps {
   category?: MaintenanceCategory;
@@ -40,7 +48,7 @@ export default function CategoryBreakdownChart({
   const screens = useBreakpoint();
 
   // Store state with proper types
-  const calculationResults = useAnalyticsStore((state: any) => state.calculationResults);
+  const calculationResults = useAnalyticsStore((state: any) => state.cache.results);
   const chartFilters = useAnalyticsStore((state: any) => state.chartFilters);
   const isLoading = useAnalyticsStore((state: any) => state.ui.isLoading);
 
@@ -72,7 +80,7 @@ export default function CategoryBreakdownChart({
 
   // Process and sort county data
   const sortedCountyData = useMemo(() => {
-    if (!calculationResults.segments || calculationResults.segments.length === 0) {
+    if (!calculationResults || !calculationResults.segments || calculationResults.segments.length === 0) {
       return [];
     }
 
@@ -114,8 +122,8 @@ export default function CategoryBreakdownChart({
       });
     }
 
-    // Limit to top 20 for readability
-    return data.slice(0, 20);
+    return data;
+    
   }, [calculationResults.segments, selectedCategory, sortBy, sortOrder, chartFilters]);
 
   // Calculate dynamic height based on number of counties
@@ -125,33 +133,98 @@ export default function CategoryBreakdownChart({
   const chartData = useMemo(() => {
     if (!sortedCountyData.length) return null;
 
-    const totalCost = sortedCountyData.reduce((sum, d) => sum + d.cost, 0);
+    const labels = sortedCountyData.map(d => isMobile ? d.county : d.name);
+    const datasets = [];
+    const color = CATEGORY_COLORS[selectedCategory] || token.colorPrimary;
 
-    return {
-      // MOBILE FIX: Use abbreviated codes on mobile, full names on desktop
-      labels: sortedCountyData.map(d => isMobile ? d.county : d.name),
-      datasets: [{
-        label: selectedCategory,
-        data: sortedCountyData.map(d => 
-          viewMode === 'percentage' 
-            ? (d.cost / totalCost) * 100 
-            : d.cost / 1000000 // Convert to millions
-        ),
-        backgroundColor: token.colorPrimary,
-        borderColor: token.colorPrimaryBorder,
+    // --- Primary Year Data ---
+    const primaryTotalCost = sortedCountyData.reduce((sum, d) => sum + d.cost, 0);
+    const primaryData = sortedCountyData.map(d => {
+      if (viewMode === 'percentage') {
+        return primaryTotalCost > 0 ? (d.cost / primaryTotalCost) * 100 : 0;
+      }
+      return d.cost / 1000000; // Convert to millions
+    });
+
+    datasets.push({
+      label: String(chartFilters.primaryYear),
+      data: primaryData,
+      backgroundColor: color,
+      borderColor: color,
+      borderWidth: 1,
+      borderRadius: 4,
+      barPercentage: 0.7,
+      categoryPercentage: chartFilters.isComparisonMode && chartFilters.compareYear ? 0.6 : 0.7,
+    });
+
+    // --- Comparison Year Data (if applicable) ---
+    if (chartFilters.isComparisonMode && chartFilters.compareYear) {
+      const compareYear = chartFilters.compareYear as SurveyYear;
+      const compareYearData: Record<string, { cost: number }> = {};
+
+      calculationResults.segments?.forEach((segment: any) => {
+        const yearData = segment.data[compareYear];
+        if (!yearData || yearData.category !== selectedCategory) return;
+
+        if (chartFilters.selectedCounties.length > 0 && !chartFilters.selectedCounties.includes(segment.county)) {
+          return;
+        }
+
+        if (!compareYearData[segment.county]) {
+          compareYearData[segment.county] = { cost: 0 };
+        }
+        compareYearData[segment.county].cost += yearData.cost;
+      });
+      
+      const compareTotalCost = Object.values(compareYearData).reduce((sum, data) => sum + data.cost, 0);
+
+      const compareData = sortedCountyData.map(item => {
+        const compareCountyData = compareYearData[item.county];
+        if (!compareCountyData) return 0;
+
+        if (viewMode === 'percentage') {
+          return compareTotalCost > 0 ? (compareCountyData.cost / compareTotalCost) * 100 : 0;
+        }
+        return compareCountyData.cost / 1000000; // Convert to millions
+      });
+
+      datasets.push({
+        label: String(chartFilters.compareYear),
+        data: compareData,
+        backgroundColor: `${color}80`, // 50% opacity
+        borderColor: `${color}80`,
         borderWidth: 1,
         borderRadius: 4,
-      }]
+        barPercentage: 0.7,
+        categoryPercentage: 0.6,
+      });
+    }
+
+    return {
+      labels,
+      datasets,
     };
-  }, [sortedCountyData, selectedCategory, viewMode, token, isMobile]);
+  }, [sortedCountyData, selectedCategory, viewMode, token, isMobile, chartFilters, calculationResults]);
 
   // Chart options
   const chartOptions: ChartOptions<'bar'> = useMemo(() => ({
     indexAxis: 'y' as const,
     responsive: true,
     maintainAspectRatio: false,
+    layout: {
+      padding: {
+        // Reduces the gap on the left side of the chart on mobile
+        left: isMobile ? 0 : 10, 
+      }
+    },
     plugins: {
-      legend: { display: false },
+      legend: {
+        display: chartFilters.isComparisonMode && !!chartFilters.compareYear,
+        position: 'top' as const,
+        labels: {
+          color: token.colorTextSecondary,
+        },
+      },
       tooltip: {
         callbacks: {
           // Always show full county name in tooltip for clarity
@@ -162,10 +235,12 @@ export default function CategoryBreakdownChart({
           },
           label: (context: TooltipItem<'bar'>) => {
             const value = context.parsed.x;
+            const datasetLabel = context.dataset.label || selectedCategory;
+
             if (viewMode === 'percentage') {
-              return `${selectedCategory}: ${value.toFixed(1)}%`;
+              return `${datasetLabel}: ${value.toFixed(1)}%`;
             }
-            return `${selectedCategory}: €${value.toFixed(2)}M`;
+            return `${datasetLabel}: €${value.toFixed(2)}M`;
           },
           afterLabel: (context: TooltipItem<'bar'>) => {
             const index = context.dataIndex;
@@ -174,14 +249,32 @@ export default function CategoryBreakdownChart({
               return [
                 `Segments: ${data.count}`,
                 `Length: ${(data.length / 1000).toFixed(1)} km`,
-                // Show county code if on mobile
+                // Show county code if on mobile for context
                 isMobile ? `Code: ${data.county}` : ''
               ].filter(Boolean);
             }
             return [];
           }
         }
-      }
+      },
+      // New datalabels configuration
+      datalabels: {
+        anchor: 'end',
+        align: 'end',
+        color: token.colorText,
+        font: {
+          size: 11,
+        },
+        formatter: (value: number) => {
+          if (value < 1) return ''; // Hide small labels to avoid clutter
+          if (viewMode === 'percentage') {
+            return `${value.toFixed(1)}%`;
+          }
+          return `€${value.toFixed(1)}M`;
+        },
+        // Hide labels on mobile to prevent clutter
+        display: !isMobile,
+      },
     },
     scales: {
       x: {
@@ -305,7 +398,7 @@ export default function CategoryBreakdownChart({
       transition={{ duration: 0.3 }}
     >
       <Card
-        className={styles.chartCard}
+        className={`${styles.chartCard} ${isMobile ? styles.mobileFriendlyCard : ''}`}
         title={
           <div className={styles.chartHeader}>
             <Breadcrumb>

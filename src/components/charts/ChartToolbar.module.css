@@ -305,3 +305,10 @@
 .countyDropdown :global(.rc-virtual-list-scrollbar-thumb:hover) {
   background: var(--ant-color-fill);
 }
+
+@media (max-width: 510px) {
+  .mobileFriendlyCard > :global(.ant-card-body) {
+    /* Overrides Ant Design's default padding to reclaim space */
+    padding: 12px 8px; 
+  }
+}
