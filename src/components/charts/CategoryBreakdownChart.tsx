@@ -431,7 +431,7 @@ export default function CategoryBreakdownChart({
             <Select
               value={selectedCategory}
               onChange={handleCategoryChange}
-              style={{ width: isMobile ? 50 : 200 }}
+              style={{ width: isMobile ? 70 : 200 }}
               size="small"
             >
              {/* Iterate over the imported CATEGORY_LABELS object */}
