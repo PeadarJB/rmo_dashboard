@@ -30,6 +30,7 @@ import {
   FileExcelOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
+import { useAuth } from '@/contexts/AuthContext';
 import { useComponentLogger } from '@/utils/logger';
 import { useAnalyticsStore, selectors } from '@/store/useAnalyticsStore';
 import { useScrollDirection, useExport } from '@/hooks';
@@ -54,12 +55,12 @@ export const Header: React.FC<HeaderProps> = ({
   onFilterClick,
 }) => {
   const logger = useComponentLogger('Header');
+  const { logout } = useAuth();
   const screens = useBreakpoint();
   const [notificationDrawer, setNotificationDrawer] = useState(false);
   const scrollDir = useScrollDirection();
 
   // --- Store and Hook Selectors ---
-  const setAuthenticated = useAnalyticsStore((state) => state.setAuthenticated);
   const isCalculating = useAnalyticsStore((state) => state.ui.isLoading);
   const hasData = useAnalyticsStore((state) => !!state.data.fullDataset);
   const lastCalculation = useAnalyticsStore((state) => state.cache.results.timestamp);
@@ -74,9 +75,9 @@ export const Header: React.FC<HeaderProps> = ({
     logger.action('themeToggle', { isDark: checked });
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     logger.action('menuClick', { item: 'logout' });
-    setAuthenticated(false);
+    await logout(); // Call the logout function from the context
   };
 
   const handleExportPDF = async () => {

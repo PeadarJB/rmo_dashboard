@@ -1,2 +1,2 @@
 export { MaintenanceCategoryChart } from './MaintenanceCategoryChart';
-export { CategoryBreakdownChart } from './CategoryBreakdownChart';
+export { default as CategoryBreakdownChart } from './CategoryBreakdownChart';
