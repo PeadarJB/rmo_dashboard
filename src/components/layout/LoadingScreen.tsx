@@ -1,24 +1,47 @@
 // src/components/layout/LoadingScreen.tsx
 import React from 'react';
-import { Skeleton, Card, Space } from 'antd';
+import { Skeleton, Card, Space, Spin, Typography } from 'antd';
 import { useComponentLogger } from '@/utils/logger';
 import styles from './LoadingScreen.module.css';
+
+const { Text } = Typography;
 
 interface LoadingScreenProps {
   variant?: 'full' | 'chart' | 'table' | 'kpi' | 'controls';
   count?: number;
+  message?: string;
 }
 
-export const LoadingScreen: React.FC<LoadingScreenProps> = ({ 
+export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   variant = 'full',
-  count = 1 
+  count = 1,
+  message = 'Loading...',
 }) => {
   const logger = useComponentLogger('LoadingScreen');
-  
+
   React.useEffect(() => {
     logger.mount({ variant, count });
     return () => logger.unmount();
   }, [variant, count]);
+
+  // If a message is provided for the full screen loader, show it
+  if (variant === 'full' && message) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          gap: '20px',
+        }}
+      >
+        <Spin size="large" />
+        <Text type="secondary">{message}</Text>
+      </div>
+    );
+  }
 
   // KPI Card Skeleton
   const KPISkeleton = () => (
@@ -109,23 +132,27 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
     case 'kpi':
       return (
         <div className={styles.kpiGroup}>
-          {[...Array(count)].map((_, i) => <KPISkeleton key={i} />)}
+          {[...Array(count)].map((_, i) => (
+            <KPISkeleton key={i} />
+          ))}
         </div>
       );
-    
+
     case 'chart':
       return (
         <div className={styles.chartGroup}>
-          {[...Array(count)].map((_, i) => <ChartSkeleton key={i} />)}
+          {[...Array(count)].map((_, i) => (
+            <ChartSkeleton key={i} />
+          ))}
         </div>
       );
-    
+
     case 'table':
       return <TableSkeleton />;
-    
+
     case 'controls':
       return <ControlsSkeleton />;
-    
+
     case 'full':
     default:
       return <FullDashboardSkeleton />;
