@@ -5,13 +5,19 @@ import { Button } from 'antd';
 import { CloseOutlined, ControlOutlined } from '@ant-design/icons';
 import { ParameterCostControls } from '@/components/controls/ParameterCostControls';
 import styles from './ControlsSider.module.css';
+import clsx from 'clsx'; // Make sure to import a class utility
 
 interface ControlsSiderProps {
   isVisible: boolean;
   onClose: () => void;
+  isDarkMode?: boolean; // Add isDarkMode to the props
 }
 
-export const ControlsSider: React.FC<ControlsSiderProps> = ({ isVisible, onClose }) => {
+export const ControlsSider: React.FC<ControlsSiderProps> = ({
+  isVisible,
+  onClose,
+  isDarkMode = false, // Default to dark mode styles if not provided
+}) => {
   const siderVariants: Variants = {
     hidden: {
       x: '-100%',
@@ -43,7 +49,12 @@ export const ControlsSider: React.FC<ControlsSiderProps> = ({ isVisible, onClose
               aria-label="Close controls panel"
             />
           </div>
-          <div className={styles.siderContent}>
+          {/* Change is on the next line */}
+          <div
+            className={clsx(styles.siderContent, {
+              [styles.lightTheme]: !isDarkMode,
+            })}
+          >
             <ParameterCostControls />
           </div>
         </motion.div>

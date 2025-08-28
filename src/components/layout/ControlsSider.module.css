@@ -5,18 +5,15 @@
   top: 0;
   left: 0;
   bottom: 0;
-  width: 33vw; /* Set width to one-third of the viewport width */
+  width: 33vw;
   min-width: 350px;
   max-width: 500px;
   z-index: 1000;
-  
   background-color: color-mix(in srgb, var(--ant-color-bg-container) 70%, transparent);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  
   border-right: 1px solid var(--ant-color-border-secondary);
   box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
-  
   display: flex;
   flex-direction: column;
 }
@@ -27,7 +24,7 @@
   align-items: center;
   padding: 12px 16px;
   border-bottom: 1px solid var(--ant-color-border-secondary);
-  flex-shrink: 0; /* Prevent header from shrinking */
+  flex-shrink: 0;
 }
 
 .siderHeader h3 {
@@ -46,21 +43,37 @@
   height: 100%;
 }
 
+/* --- Scrollbar Styles --- */
+
+/* General scrollbar styling */
 .siderContent::-webkit-scrollbar {
   width: 8px;
 }
 
+/* Default (Dark Theme) Scrollbar */
 .siderContent::-webkit-scrollbar-track {
-  background: transparent;
+  background: transparent; /* Track is transparent to show the blurred background */
 }
 
 .siderContent::-webkit-scrollbar-thumb {
-  /* Use a very light fill color for the thumb */
   background: var(--ant-color-fill-secondary);
   border-radius: 4px;
 }
 
 .siderContent::-webkit-scrollbar-thumb:hover {
-  /* Darken slightly on hover */
   background: var(--ant-color-fill);
+}
+
+/* Light Theme Scrollbar Overrides */
+.siderContent.lightTheme::-webkit-scrollbar-track {
+  /* Keep it transparent or use a light color if you prefer */
+  background: transparent;
+}
+
+.siderContent.lightTheme::-webkit-scrollbar-thumb {
+  background: #d9d9d9; /* A light grey for the thumb */
+}
+
+.siderContent.lightTheme::-webkit-scrollbar-thumb:hover {
+  background: #bfbfbf; /* A darker grey for hover */
 }
