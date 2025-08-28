@@ -309,6 +309,6 @@
 @media (max-width: 510px) {
   .mobileFriendlyCard > :global(.ant-card-body) {
     /* Overrides Ant Design's default padding to reclaim space */
-    padding: 12px 8px; 
+    padding: 12px 8px;  
   }
 }

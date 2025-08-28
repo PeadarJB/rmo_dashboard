@@ -19,6 +19,7 @@ import type { MaintenanceCategory } from '../../types/calculations';
 import { motion } from 'framer-motion';
 import { theme } from 'antd';
 import styles from './CategoryBreakdownChart.module.css';
+import { CATEGORY_LABELS } from './labels';
 
 const CATEGORY_COLORS: Record<MaintenanceCategory, string> = {
   'Road Reconstruction': '#ff4d4f',
@@ -214,7 +215,7 @@ export default function CategoryBreakdownChart({
     layout: {
       padding: {
         // Reduces the gap on the left side of the chart on mobile
-        left: isMobile ? 0 : 10, 
+        left: isMobile ? 0 : 0, 
       }
     },
     plugins: {
@@ -430,15 +431,16 @@ export default function CategoryBreakdownChart({
             <Select
               value={selectedCategory}
               onChange={handleCategoryChange}
-              style={{ width: 200 }}
+              style={{ width: isMobile ? 50 : 200 }}
               size="small"
             >
-              <Select.Option value="Road Reconstruction">Road Reconstruction</Select.Option>
-              <Select.Option value="Structural Overlay">Structural Overlay</Select.Option>
-              <Select.Option value="Surface Restoration">Surface Restoration</Select.Option>
-              <Select.Option value="Restoration of Skid Resistance">Restoration of Skid</Select.Option>
-              <Select.Option value="Routine Maintenance">Routine Maintenance</Select.Option>
-            </Select>
+             {/* Iterate over the imported CATEGORY_LABELS object */}
+            {Object.entries(CATEGORY_LABELS).map(([category, labels]) => (
+              <Select.Option key={category} value={category}>
+                {isMobile ? labels.short : labels.full}
+              </Select.Option>
+            ))}
+          </Select>
 
             <Tooltip title={viewMode === 'absolute' ? 'Show percentages' : 'Show values'}>
               <Button
