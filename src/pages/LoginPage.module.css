@@ -1,23 +1,43 @@
-.loginContainer {
+/* Fill the screen and use the theme background (falls back to white) */
+.layout {
+  min-height: 100vh;       /* fallback */
+  min-height: 100svh;      /* mobile safe */
+  background: var(--ant-color-bg-layout, #fff);
+  display: flex;
+}
+
+/* Center the card */
+.content {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  background-color: var(--ant-color-bg-layout);
+  padding: 24px;
 }
 
+/* Card sizing & look */
 .loginCard {
   width: 100%;
-  max-width: 400px;
-  padding: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
+  max-width: 480px;
+  border-radius: 16px;
+  background: var(--ant-color-bg-container, #fff);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
-.loginForm {
-  margin-top: 24px;
+/* Header block */
+.header {
+  text-align: center;
+  margin-bottom: 16px;
 }
 
-.loginFormButton {
-  width: 100%;
+.logo {
+  height: 64px;
+  width: auto;
+  display: block;
+  margin: 0 auto 8px;
+}
+
+/* Button spacing if you want a little extra breathing room */
+.loginButton {
+  margin-top: 8px;
 }

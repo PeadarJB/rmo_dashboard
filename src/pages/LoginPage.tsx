@@ -1,5 +1,5 @@
 // src/pages/LoginPage.tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Layout, Card, Typography, Button, Spin } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -14,34 +14,41 @@ const LoginPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, isLoading } = useAuth();
+  const redirectingRef = useRef(false);
 
-  // Check if user is already authenticated
+  // If already authenticated, bounce to the target page
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      // If already authenticated, redirect to originally requested page or dashboard
       const returnTo = location.state?.from?.pathname || '/';
       navigate(returnTo, { replace: true });
     }
   }, [isAuthenticated, isLoading, location.state, navigate]);
 
   const handleLogin = () => {
-    // Store the return path in sessionStorage before redirecting to Cognito
-    // This preserves it through the OAuth flow since we leave the app
+    if (redirectingRef.current) return;
+
     const returnPath = location.state?.from?.pathname || '/';
     if (returnPath !== '/') {
       sessionStorage.setItem('auth_return_path', returnPath);
     }
-    
-    // Redirect to Cognito Hosted UI
-    redirectToHostedUI();
+
+    redirectingRef.current = true;
+    redirectToHostedUI(); // Hosted UI + PKCE
   };
 
-  // Show loading spinner while checking auth status
+  // Optional: Auto-redirect as soon as we know there's no session
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      // uncomment to auto-redirect; otherwise the user clicks the button
+      // handleLogin();
+    }
+  }, [isLoading, isAuthenticated]);
+
   if (isLoading) {
     return (
       <Layout className={styles.layout}>
         <Content className={styles.content}>
-          <Spin 
+          <Spin
             indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />}
             size="large"
             tip="Checking authentication status..."
@@ -51,13 +58,12 @@ const LoginPage: React.FC = () => {
     );
   }
 
-  // If already authenticated (edge case), show a message
   if (isAuthenticated) {
     return (
       <Layout className={styles.layout}>
         <Content className={styles.content}>
           <Card className={styles.loginCard}>
-            <Spin 
+            <Spin
               indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />}
               tip="Already logged in. Redirecting..."
             />
@@ -72,15 +78,11 @@ const LoginPage: React.FC = () => {
       <Content className={styles.content}>
         <Card className={styles.loginCard}>
           <div className={styles.header}>
-            <img
-              src="/img/RMO_Logo.png"
-              alt="RMO Logo"
-              className={styles.logo}
-            />
+            <img src="/img/RMO_Logo.png" alt="RMO Logo" className={styles.logo} />
             <Title level={3}>RMO Dashboard</Title>
             <Text type="secondary">Regional Road Management Analytics</Text>
           </div>
-          
+
           <Button
             type="primary"
             size="large"
@@ -90,10 +92,10 @@ const LoginPage: React.FC = () => {
           >
             Sign in with Corporate Account
           </Button>
-          
+
           <div style={{ marginTop: '16px', textAlign: 'center' }}>
             <Text type="secondary" style={{ fontSize: '12px' }}>
-              You will be redirected to your organization's login page
+              You’ll be redirected to your organization’s login page
             </Text>
           </div>
         </Card>
