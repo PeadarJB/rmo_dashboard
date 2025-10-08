@@ -157,6 +157,41 @@ export const KPISummary: React.FC = () => {
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} lg={6}>
           <KPICard
+            title="Segments in Analysis"
+            primaryYear={chartFilters.primaryYear}
+            value={primaryKPIs.segmentsProcessed}
+            suffix={`/ ${primaryKPIs.totalSegments.toLocaleString()}`}
+            loading={isLoading}
+            description="Segments analyzed in current calculation vs. total available"
+            trends={trendComparisons.segmentsProcessed}
+          />
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <KPICard
+            title="Network Length"
+            primaryYear={chartFilters.primaryYear}
+            value={primaryKPIs.networkLength}
+            suffix="km"
+            precision={0}
+            loading={isLoading}
+            description="Total Regional road network length under the selected filters"
+            trends={trendComparisons.networkLength}
+          />
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <KPICard
+            title="Condition Score"
+            primaryYear={chartFilters.primaryYear}
+            value={primaryKPIs.conditionScore}
+            suffix="/100"
+            precision={1}
+            loading={isLoading}
+            description="Overall network condition (100 = excellent)"
+            trends={trendComparisons.conditionScore}
+          />
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <KPICard
             title="Total Cost"
             primaryYear={chartFilters.primaryYear}
             value={primaryKPIs.totalCost}
@@ -174,45 +209,7 @@ export const KPISummary: React.FC = () => {
             invertTrendColor={true}
             trends={trendComparisons.totalCost}
           />
-        </Col>
-
-        <Col xs={24} sm={12} lg={6}>
-          <KPICard
-            title="Network Length"
-            primaryYear={chartFilters.primaryYear}
-            value={primaryKPIs.networkLength}
-            suffix="km"
-            precision={0}
-            loading={isLoading}
-            description="Total Regional road network length under the selected filters"
-            trends={trendComparisons.networkLength}
-          />
-        </Col>
-
-        <Col xs={24} sm={12} lg={6}>
-          <KPICard
-            title="Condition Score"
-            primaryYear={chartFilters.primaryYear}
-            value={primaryKPIs.conditionScore}
-            suffix="/100"
-            precision={1}
-            loading={isLoading}
-            description="Overall network condition (100 = excellent)"
-            trends={trendComparisons.conditionScore}
-          />
-        </Col>
-
-        <Col xs={24} sm={12} lg={6}>
-          <KPICard
-            title="Segments in Analysis"
-            primaryYear={chartFilters.primaryYear}
-            value={primaryKPIs.segmentsProcessed}
-            suffix={`/ ${primaryKPIs.totalSegments.toLocaleString()}`}
-            loading={isLoading}
-            description="Segments analyzed in current calculation vs. total available"
-            trends={trendComparisons.segmentsProcessed}
-          />
-        </Col>
+        </Col>        
       </Row>
     </div>
   );
