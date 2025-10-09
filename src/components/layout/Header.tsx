@@ -166,7 +166,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onMenuClick}
           />
           <div className={styles.mobileTitle} title="Regional Road Analytics Dashboard">
-            RMO Dashboard
+            Regional Roads Pavement Analysis
           </div>
           <Dropdown menu={{ items: mobileMenuItems }} trigger={['click']}>
             <Button type="text" aria-label="More options"><MoreOutlined /></Button>

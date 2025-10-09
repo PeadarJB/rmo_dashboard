@@ -73,12 +73,12 @@ const LoginPage: React.FC = () => {
         <Card className={styles.loginCard}>
           <div className={styles.header}>
             <img
-              src="/img/RMO_Logo.png"
+              src="/img/PMS-Logo-150x150.png"
               alt="RMO Logo"
               className={styles.logo}
             />
-            <Title level={3}>RMO Dashboard</Title>
-            <Text type="secondary">Regional Road Management Analytics</Text>
+            <Title level={3}>Regional Road Pavement Analysis</Title>
+            <Text type="secondary">By Pavement Management Services</Text>
           </div>
           
           <Button
