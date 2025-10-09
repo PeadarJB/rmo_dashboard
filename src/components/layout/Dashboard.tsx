@@ -42,7 +42,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <FilterControls />
       </FilterSider>
 
-      <Layout className={styles.mainLayout}>
+      <Layout 
+        className={styles.mainLayout}
+        style={{ 
+          paddingLeft: isControlsSiderVisible ? 'clamp(350px, 33vw, 500px)' : 0 
+        }}
+      >
         <Layout.Header
           className={styles.header}
           style={{ background: token.colorBgContainer, padding: 0 }}

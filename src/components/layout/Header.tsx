@@ -183,8 +183,8 @@ export const Header: React.FC<HeaderProps> = ({
         <Tooltip title={isSiderVisible ? 'Hide Controls' : 'Show Controls'}>
           <Button type="text" icon={isSiderVisible ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />} onClick={onMenuClick} />
         </Tooltip>
-        <img src="/img/RMO_Logo.png" alt="RMO Logo" className={styles.logo} />
-        <h1 className={styles.title}>RMO Regional Road Survey</h1>
+        <img src="/img/PMS-Logo-150x150.png" alt="PMS Logo" className={styles.logo} />
+        <h1 className={styles.title}>Regional Road Pavement Analysis</h1>
         {lastCalculation && <span className={styles.lastUpdate}>Last updated: {new Date(lastCalculation).toLocaleTimeString()}</span>}
       </div>
       <div className={styles.headerRight}>

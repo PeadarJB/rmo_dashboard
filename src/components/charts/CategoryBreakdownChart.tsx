@@ -57,9 +57,9 @@ export default function CategoryBreakdownChart({
   const [selectedCategory, setSelectedCategory] = useState<MaintenanceCategory>(
     category || 'Structural Overlay'
   );
-  const [sortBy, setSortBy] = useState<'value' | 'alphabetical'>('value');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sortBy, setSortBy] = useState<'value' | 'alphabetical'>('alphabetical');
   const [viewMode, setViewMode] = useState<'absolute' | 'percentage'>('absolute');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   const isMobile = !screens.md; // Use breakpoint for responsive logic
 
@@ -258,23 +258,8 @@ export default function CategoryBreakdownChart({
           }
         }
       },
-      // New datalabels configuration
       datalabels: {
-        anchor: 'end',
-        align: 'end',
-        color: token.colorText,
-        font: {
-          size: 11,
-        },
-        formatter: (value: number) => {
-          if (value < 1) return ''; // Hide small labels to avoid clutter
-          if (viewMode === 'percentage') {
-            return `${value.toFixed(1)}%`;
-          }
-          return `€${value.toFixed(1)}M`;
-        },
-        // Hide labels on mobile to prevent clutter
-        display: !isMobile,
+        display: false,
       },
     },
     scales: {
