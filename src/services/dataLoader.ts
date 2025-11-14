@@ -20,11 +20,11 @@ const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 // S3 file names
 const SUMMARY_FILE = 'road_network_summary_2.json';
-const FULL_DATA_FILE = 'road_network_full_2.json';
+const FULL_DATA_FILE = 'road_network_segments.json';
 
 // Local file paths (fallback)
 const LOCAL_SUMMARY_PATH = '/data/road_network_summary_2.json';
-const LOCAL_FULL_PATH = '/data/road_network_full_2.json';
+const LOCAL_FULL_PATH = '/data/road_network_segments.json';
 
 // Fallback to local files if S3 fails (development only)
 const USE_LOCAL_FALLBACK = import.meta.env.DEV;

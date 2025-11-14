@@ -18,9 +18,19 @@ export interface RoadConditions {
 // Main segment structure - exactly matches JSON
 export interface RoadSegmentData {
   id: number;
-  roadNumber: string;  // e.g., "R115"
+  roadNumber: string;  // e.g., "R101"
   county: string;      // e.g., "DCC", "STHDUB"
-  data: Record<SurveyYear, RoadConditions | null>;
+  joinKey: string;     // e.g., "R101_1" - unique identifier for joins
+  isDublin: number;    // 1 if Dublin, 0 otherwise
+  isCityTown: number;  // 1 if city/town, 0 otherwise
+  isPeat: number;      // 1 if peat area, 0 otherwise
+  isFormerNa: number;  // 1 if former national road, 0 otherwise
+  isNew: number;       // 1 if new road, 0 otherwise
+  data: {
+    "2011"?: RoadConditions | null;  // Optional: may be missing from JSON
+    "2018"?: RoadConditions | null;  // Optional: may be missing from JSON
+    "2025"?: RoadConditions | null;  // Optional: may be missing from JSON
+  };
 }
 
 // Data load progress tracking

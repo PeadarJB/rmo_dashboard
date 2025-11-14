@@ -23,10 +23,16 @@ export const RoadSegmentDataSchema = z.object({
   id: z.number(),
   roadNumber: z.string(),
   county: z.string(),
+  joinKey: z.string(),                    // NEW - unique identifier for joins
+  isDublin: z.number(),                   // NEW (0 or 1)
+  isCityTown: z.number(),                 // NEW (0 or 1)
+  isPeat: z.number(),                     // NEW (0 or 1)
+  isFormerNa: z.number(),                 // NEW (0 or 1)
+  isNew: z.number(),                      // NEW (0 or 1)
   data: z.object({
-    "2011": RoadConditionsSchema.nullable(),
-    "2018": RoadConditionsSchema.nullable(),
-    "2025": RoadConditionsSchema.nullable(),
+    "2011": RoadConditionsSchema.nullish(),  // Allows null or undefined (missing key)
+    "2018": RoadConditionsSchema.nullish(),  // Allows null or undefined (missing key)
+    "2025": RoadConditionsSchema.nullish(),  // Allows null or undefined (missing key)
   }),
 });
 
